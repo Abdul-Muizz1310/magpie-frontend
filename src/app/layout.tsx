@@ -13,8 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-	title: "Magpie",
-	description: "YAML-defined scrapers that self-heal",
+	title: "magpie — YAML scrapers that self-heal",
+	description:
+		"Define a scraper in 20 lines of YAML. When a selector breaks, an LLM patches it and opens a PR.",
 };
 
 export default function RootLayout({
@@ -24,7 +25,7 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-			<body className="min-h-full flex flex-col">{children}</body>
+			<body className="min-h-full">{children}</body>
 		</html>
 	);
 }

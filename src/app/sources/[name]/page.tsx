@@ -1,31 +1,40 @@
+import { AlertTriangle, ArrowLeft, CheckCircle, Clock, Loader2, XCircle } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { PageFrame } from "@/components/terminal/PageFrame";
+import { TerminalWindow } from "@/components/terminal/TerminalWindow";
 import type { Run, Source } from "@/lib/api";
 import { ApiError, fetchRuns, fetchSource } from "@/lib/api";
 
-function StatusBadge({ status }: { status: string | null }) {
-	const colorMap: Record<string, string> = {
-		ok: "bg-green-100 text-green-800",
-		empty: "bg-yellow-100 text-yellow-800",
-		healed: "bg-blue-100 text-blue-800",
-		error: "bg-red-100 text-red-800",
-		running: "bg-purple-100 text-purple-800",
-	};
-	const classes = status
-		? (colorMap[status] ?? "bg-gray-100 text-gray-800")
-		: "bg-gray-100 text-gray-800";
-	return (
-		<span
-			className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${classes}`}
-		>
-			{status ?? "unknown"}
-		</span>
-	);
-}
+export const dynamic = "force-dynamic";
 
 function RunStatusIcon({ status }: { status: string }) {
-	const icon = status === "ok" ? "\u2713" : status === "error" ? "\u2717" : "\u26A0";
-	return <span data-testid="run-status-icon">{icon}</span>;
+	switch (status) {
+		case "ok":
+			return (
+				<span data-testid="run-status-icon">
+					<CheckCircle className="h-4 w-4 text-success" />
+				</span>
+			);
+		case "error":
+			return (
+				<span data-testid="run-status-icon">
+					<XCircle className="h-4 w-4 text-error" />
+				</span>
+			);
+		case "running":
+			return (
+				<span data-testid="run-status-icon">
+					<Loader2 className="h-4 w-4 animate-spin text-accent-emerald" />
+				</span>
+			);
+		default:
+			return (
+				<span data-testid="run-status-icon">
+					<AlertTriangle className="h-4 w-4 text-warning" />
+				</span>
+			);
+	}
 }
 
 function formatDuration(start: string, end: string | null): string {
@@ -47,22 +56,29 @@ function formatDate(iso: string): string {
 
 function RunRow({ run }: { run: Run }) {
 	return (
-		<div className="flex items-start gap-3 border-b border-gray-100 py-3 last:border-0">
+		<div className="flex items-start gap-3 border-b border-border py-3 last:border-0">
 			<RunStatusIcon status={run.status} />
 			<div className="flex-1">
-				<div className="flex items-center gap-2">
-					<span className="text-sm font-medium">{formatDate(run.started_at)}</span>
-					<StatusBadge status={run.status} />
-					<span className="text-xs text-gray-500">
+				<div className="flex items-center gap-3">
+					<span className="font-mono text-sm text-foreground">{formatDate(run.started_at)}</span>
+					<span className="font-mono text-[10px] uppercase tracking-wider text-fg-faint">
 						{formatDuration(run.started_at, run.ended_at)}
 					</span>
 				</div>
-				<div className="mt-1 text-xs text-gray-600">
-					<span>{run.items_new} new</span>
-					{run.items_updated > 0 && <span> · {run.items_updated} updated</span>}
-					{run.items_removed > 0 && <span> · {run.items_removed} removed</span>}
+				<div className="mt-1 flex gap-3 font-mono text-xs text-fg-muted">
+					<span className="text-success">{run.items_new} new</span>
+					{run.items_updated > 0 && (
+						<span className="text-accent-teal">{run.items_updated} updated</span>
+					)}
+					{run.items_removed > 0 && (
+						<span className="text-warning">{run.items_removed} removed</span>
+					)}
 				</div>
-				{run.error && <p className="mt-1 text-xs text-red-600">{run.error}</p>}
+				{run.error && (
+					<p className="mt-1 rounded border border-error/30 bg-error/5 px-2 py-1 font-mono text-xs text-error">
+						{run.error}
+					</p>
+				)}
 			</div>
 		</div>
 	);
@@ -86,44 +102,70 @@ export default async function SourceDetailPage(props: {
 		}
 		error = e instanceof Error ? e.message : "Failed to load source";
 		return (
-			<main className="mx-auto max-w-4xl p-8">
-				<div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800">
+			<PageFrame statusLeft={`magpie.dev ~/sources/${name}`}>
+				<div
+					role="alert"
+					className="rounded-xl border border-error/30 bg-error/5 p-4 font-mono text-sm text-error"
+				>
 					{error}
 				</div>
-			</main>
+			</PageFrame>
 		);
 	}
 
 	return (
-		<main className="mx-auto max-w-4xl p-8">
-			<Link href="/" className="text-sm text-gray-500 hover:text-gray-700">
-				&larr; Back to sources
-			</Link>
+		<PageFrame
+			active="home"
+			statusLeft={`magpie.dev ~/sources/${source.name}`}
+			statusRight={`${runs.length} runs · ${source.item_count} items`}
+		>
+			<div className="flex flex-col gap-10">
+				{/* Back link */}
+				<Link
+					href="/"
+					className="flex items-center gap-1.5 font-mono text-xs text-fg-muted transition-colors hover:text-foreground"
+				>
+					<ArrowLeft className="h-3.5 w-3.5" />
+					back to sources
+				</Link>
 
-			<div className="mt-4">
-				<div className="flex items-center gap-3">
-					<h1 className="text-2xl font-bold">{source.name}</h1>
-					<StatusBadge status={source.last_status} />
-				</div>
-				<p className="mt-1 text-gray-600">{source.description}</p>
-				<div className="mt-2 flex gap-4 text-xs text-gray-500">
-					<span>{source.item_count} items</span>
-					<span>SHA: {source.config_sha}</span>
-				</div>
-			</div>
-
-			<section className="mt-8">
-				<h2 className="mb-4 text-lg font-semibold">Run History</h2>
-				{runs.length === 0 ? (
-					<p className="text-gray-500">No runs recorded.</p>
-				) : (
-					<div className="rounded-lg border border-gray-200 p-4">
-						{runs.map((run) => (
-							<RunRow key={run.id} run={run} />
-						))}
+				{/* Source header */}
+				<div>
+					<div className="flex items-center gap-3">
+						<h1 className="font-mono text-2xl font-bold text-foreground">{source.name}</h1>
+						<span className="font-mono text-[10px] uppercase tracking-wider text-fg-faint">
+							{source.last_status ?? "idle"}
+						</span>
 					</div>
-				)}
-			</section>
-		</main>
+					<p className="mt-2 text-sm leading-relaxed text-fg-muted">{source.description}</p>
+					<div className="mt-2 flex gap-4 font-mono text-xs text-fg-faint">
+						<span>{source.item_count} items</span>
+						<span>
+							sha: <span className="text-accent-emerald">{source.config_sha.slice(0, 7)}</span>
+						</span>
+					</div>
+				</div>
+
+				{/* Run timeline */}
+				<TerminalWindow
+					title={`runs.${source.name}.log`}
+					statusDot={runs.length > 0 ? "emerald" : "off"}
+					statusLabel={`${runs.length} runs`}
+				>
+					{runs.length === 0 ? (
+						<div className="flex items-center gap-2 text-fg-muted">
+							<Clock className="h-4 w-4" />
+							<span className="text-sm">No runs recorded.</span>
+						</div>
+					) : (
+						<div>
+							{runs.map((run) => (
+								<RunRow key={run.id} run={run} />
+							))}
+						</div>
+					)}
+				</TerminalWindow>
+			</div>
+		</PageFrame>
 	);
 }

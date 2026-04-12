@@ -63,7 +63,7 @@ describe("Demo Page (/demo)", () => {
 		const page = await DemoPage();
 		render(page);
 
-		expect(screen.getByText(/3 sources/i)).toBeInTheDocument();
+		expect(screen.getAllByText(/3 sources/i).length).toBeGreaterThanOrEqual(1);
 	});
 
 	it('shows "Backend offline" when health check fails', async () => {
@@ -73,7 +73,7 @@ describe("Demo Page (/demo)", () => {
 		const page = await DemoPage();
 		render(page);
 
-		expect(screen.getByText(/backend offline/i)).toBeInTheDocument();
+		expect(screen.getAllByText(/backend offline/i).length).toBeGreaterThanOrEqual(1);
 	});
 
 	it("does not crash when backend is offline", async () => {

@@ -63,7 +63,7 @@ describe("Sources List Page (/)", () => {
 
 		expect(screen.getByRole("heading", { name: "hackernews" })).toBeInTheDocument();
 		expect(screen.getByText("Scrape Hacker News")).toBeInTheDocument();
-		expect(screen.getByText("ok")).toBeInTheDocument();
+		expect(screen.getAllByText("ok").length).toBeGreaterThanOrEqual(1);
 		expect(screen.getByText(/30 items/)).toBeInTheDocument();
 	});
 
@@ -130,7 +130,7 @@ describe("Sources List Page (/)", () => {
 		render(page);
 
 		const badge = screen.getByTestId("status-badge");
-		expect(badge.className).toContain("bg-gray");
+		expect(badge.className).toContain("bg-fg-faint");
 	});
 
 	it("shows error banner when API fails", async () => {
