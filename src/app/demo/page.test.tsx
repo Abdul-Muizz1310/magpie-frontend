@@ -37,7 +37,7 @@ describe("Demo Page (/demo)", () => {
 		const page = await DemoPage();
 		render(page);
 
-		expect(screen.getByText(/hackernews\.yaml/i)).toBeInTheDocument();
+		expect(screen.getByRole("heading", { name: /hackernews\.yaml/i })).toBeInTheDocument();
 		const codeBlock = screen.getByRole("code");
 		expect(codeBlock).toBeInTheDocument();
 	});

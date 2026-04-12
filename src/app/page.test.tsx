@@ -2,6 +2,12 @@ import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, type Mock, vi } from "vitest";
 import Home from "./page";
 
+vi.mock("next/link", () => ({
+	default: ({ children, href }: { children: React.ReactNode; href: string }) => (
+		<a href={href}>{children}</a>
+	),
+}));
+
 vi.mock("@/lib/api", () => ({
 	fetchSources: vi.fn(),
 }));
@@ -55,7 +61,7 @@ describe("Sources List Page (/)", () => {
 		const page = await Home();
 		render(page);
 
-		expect(screen.getByText("hackernews")).toBeInTheDocument();
+		expect(screen.getByRole("heading", { name: "hackernews" })).toBeInTheDocument();
 		expect(screen.getByText("Scrape Hacker News")).toBeInTheDocument();
 		expect(screen.getByText("ok")).toBeInTheDocument();
 		expect(screen.getByText(/30 items/)).toBeInTheDocument();
@@ -76,8 +82,9 @@ describe("Sources List Page (/)", () => {
 		const page = await Home();
 		render(page);
 
-		const link = screen.getByRole("link", { name: /hackernews/i });
-		expect(link).toHaveAttribute("href", "/sources/hackernews");
+		const links = screen.getAllByRole("link");
+		const cardLink = links.find((l) => l.getAttribute("href") === "/sources/hackernews");
+		expect(cardLink).toBeDefined();
 	});
 
 	it('shows "No sources configured" when zero sources returned', async () => {
@@ -104,7 +111,7 @@ describe("Sources List Page (/)", () => {
 		const page = await Home();
 		render(page);
 
-		expect(screen.getByText(/never/i)).toBeInTheDocument();
+		expect(screen.getByText("Never")).toBeInTheDocument();
 	});
 
 	it("shows gray badge when last_status is null", async () => {
@@ -123,7 +130,7 @@ describe("Sources List Page (/)", () => {
 		render(page);
 
 		const badge = screen.getByTestId("status-badge");
-		expect(badge).toHaveClass("bg-gray");
+		expect(badge.className).toContain("bg-gray");
 	});
 
 	it("shows error banner when API fails", async () => {

@@ -1,6 +1,12 @@
 import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, type Mock, vi } from "vitest";
 
+vi.mock("next/link", () => ({
+	default: ({ children, href }: { children: React.ReactNode; href: string }) => (
+		<a href={href}>{children}</a>
+	),
+}));
+
 vi.mock("@/lib/api", () => ({
 	fetchHeals: vi.fn(),
 }));

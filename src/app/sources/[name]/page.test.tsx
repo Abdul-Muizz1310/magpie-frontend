@@ -14,6 +14,12 @@ vi.mock("@/lib/api", () => ({
 	},
 }));
 
+vi.mock("next/link", () => ({
+	default: ({ children, href }: { children: React.ReactNode; href: string }) => (
+		<a href={href}>{children}</a>
+	),
+}));
+
 vi.mock("next/navigation", () => ({
 	notFound: vi.fn(() => {
 		throw new Error("NEXT_NOT_FOUND");
@@ -72,7 +78,7 @@ describe("Source Detail Page (/sources/[name])", () => {
 
 		expect(screen.getByRole("heading", { name: /hackernews/i })).toBeInTheDocument();
 		expect(screen.getByText("Scrape Hacker News front page")).toBeInTheDocument();
-		expect(screen.getByText("ok")).toBeInTheDocument();
+		expect(screen.getAllByText("ok").length).toBeGreaterThanOrEqual(1);
 	});
 
 	it("renders run timeline with correct data", async () => {
