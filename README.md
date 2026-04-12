@@ -4,7 +4,7 @@
 
 <p>
   <a href="https://github.com/Abdul-Muizz1310/magpie-frontend/actions/workflows/ci.yml"><img src="https://github.com/Abdul-Muizz1310/magpie-frontend/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://magpie-frontend.vercel.app">Live App</a>
+  <a href="https://magpie-frontend-three.vercel.app">Live App</a>
 </p>
 
 ## What is this?
