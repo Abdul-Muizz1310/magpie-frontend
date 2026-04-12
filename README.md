@@ -25,10 +25,9 @@ A dashboard for the magpie scraping framework. Browse configured sources, inspec
 | Concern | Choice |
 |---|---|
 | Framework | Next.js 16 (App Router) |
-| Language | TypeScript (strict) |
+| Language | TypeScript 5.9 (strict) |
 | Styling | Tailwind CSS v4 |
-| Components | shadcn/ui |
-| Diff view | react-diff-viewer-continued |
+| Validation | Zod v4 |
 | Lint + format | Biome |
 | Tests | Vitest + Testing Library |
 | Deploy | Vercel |
