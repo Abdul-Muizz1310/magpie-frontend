@@ -158,9 +158,7 @@ describe("Source Detail Page (/sources/[name])", () => {
 
 	it("renders default warning icon for unknown run status", async () => {
 		mockFetchSource.mockResolvedValue(mockSource);
-		mockFetchRuns.mockResolvedValue([
-			{ ...mockRuns[0], status: "unknown-status" },
-		]);
+		mockFetchRuns.mockResolvedValue([{ ...mockRuns[0], status: "unknown-status" }]);
 
 		const page = await SourceDetailPage({ params: Promise.resolve({ name: "hackernews" }) });
 		render(page);

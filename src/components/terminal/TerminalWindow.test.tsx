@@ -16,11 +16,7 @@ describe("TerminalWindow", () => {
 	});
 
 	it("applies terminal-glow class when strong prop is false (default)", () => {
-		render(
-			<TerminalWindow title="test.log">
-				content
-			</TerminalWindow>,
-		);
+		render(<TerminalWindow title="test.log">content</TerminalWindow>);
 
 		const section = screen.getByText("content").closest("section");
 		expect(section?.className).toContain("terminal-glow");
