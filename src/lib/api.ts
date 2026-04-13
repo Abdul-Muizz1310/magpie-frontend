@@ -65,7 +65,9 @@ export class ApiError extends Error {
 // ── Fetch helpers ──────────────────────────────────────────────────────────
 
 async function request<T>(path: string, schema: z.ZodType<T>): Promise<T> {
-	const res = await fetch(`${getBaseUrl()}${path}`);
+	const res = await fetch(`${getBaseUrl()}${path}`, {
+		signal: AbortSignal.timeout(45_000),
+	});
 	if (!res.ok) {
 		let message = res.statusText;
 		try {
