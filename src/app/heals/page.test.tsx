@@ -120,4 +120,13 @@ describe("Heals Page (/heals)", () => {
 
 		expect(screen.getByRole("alert")).toBeInTheDocument();
 	});
+
+	it("falls back to generic error message when API rejects with non-Error", async () => {
+		mockFetchHeals.mockRejectedValue("string error");
+
+		const page = await HealsPage();
+		render(page);
+
+		expect(screen.getByRole("alert")).toHaveTextContent("Failed to fetch heals");
+	});
 });

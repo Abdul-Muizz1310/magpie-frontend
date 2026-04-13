@@ -155,4 +155,53 @@ describe("Source Detail Page (/sources/[name])", () => {
 
 		expect(screen.getByRole("alert")).toBeInTheDocument();
 	});
+
+	it("renders default warning icon for unknown run status", async () => {
+		mockFetchSource.mockResolvedValue(mockSource);
+		mockFetchRuns.mockResolvedValue([
+			{ ...mockRuns[0], status: "unknown-status" },
+		]);
+
+		const page = await SourceDetailPage({ params: Promise.resolve({ name: "hackernews" }) });
+		render(page);
+
+		const statusIcons = screen.getAllByTestId("run-status-icon");
+		expect(statusIcons).toHaveLength(1);
+	});
+
+	it("falls back to generic error message when API rejects with non-Error", async () => {
+		mockFetchSource.mockRejectedValue("string error");
+		mockFetchRuns.mockRejectedValue("string error");
+
+		const page = await SourceDetailPage({ params: Promise.resolve({ name: "hackernews" }) });
+		render(page);
+
+		expect(screen.getByRole("alert")).toHaveTextContent("Failed to load source");
+	});
+
+	it("renders short duration (seconds) for runs under 60 seconds", async () => {
+		mockFetchSource.mockResolvedValue(mockSource);
+		mockFetchRuns.mockResolvedValue([
+			{
+				...mockRuns[0],
+				started_at: "2026-04-10T12:00:00Z",
+				ended_at: "2026-04-10T12:00:30Z",
+			},
+		]);
+
+		const page = await SourceDetailPage({ params: Promise.resolve({ name: "hackernews" }) });
+		render(page);
+
+		expect(screen.getByText("30s")).toBeInTheDocument();
+	});
+
+	it('shows "idle" when source last_status is null', async () => {
+		mockFetchSource.mockResolvedValue({ ...mockSource, last_status: null });
+		mockFetchRuns.mockResolvedValue([]);
+
+		const page = await SourceDetailPage({ params: Promise.resolve({ name: "hackernews" }) });
+		render(page);
+
+		expect(screen.getByText("idle")).toBeInTheDocument();
+	});
 });

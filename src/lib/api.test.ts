@@ -173,4 +173,79 @@ describe("edge cases", () => {
 		// Should attempt the call, not short-circuit
 		await expect(fetchSource("")).rejects.toThrow();
 	});
+
+	it("falls back to localhost:8000 when NEXT_PUBLIC_API_URL is unset", async () => {
+		const saved = process.env.NEXT_PUBLIC_API_URL;
+		delete process.env.NEXT_PUBLIC_API_URL;
+
+		// Without the env var, it will try localhost:8000 and fail with a network error
+		await expect(fetchHealth()).rejects.toThrow();
+
+		process.env.NEXT_PUBLIC_API_URL = saved;
+	});
+
+	it("uses statusText when error response body is not valid JSON", async () => {
+		server.use(
+			http.get(`${API_URL}/sources`, () => {
+				return new HttpResponse("<<<not json>>>", {
+					status: 502,
+					statusText: "Bad Gateway",
+				});
+			}),
+		);
+
+		await expect(fetchSources()).rejects.toMatchObject({
+			status: 502,
+			message: "Bad Gateway",
+		});
+	});
+
+	it("uses body.message when body.detail is absent", async () => {
+		server.use(
+			http.get(
+				`${API_URL}/sources`,
+				() =>
+					new HttpResponse(JSON.stringify({ message: "rate limited" }), {
+						status: 429,
+						statusText: "Too Many Requests",
+					}),
+			),
+		);
+
+		await expect(fetchSources()).rejects.toMatchObject({
+			status: 429,
+			message: "rate limited",
+		});
+	});
+
+	it("falls back to statusText when error body JSON has no detail or message", async () => {
+		server.use(
+			http.get(
+				`${API_URL}/sources`,
+				() =>
+					new HttpResponse(JSON.stringify({ code: "UNKNOWN" }), {
+						status: 503,
+						statusText: "Service Unavailable",
+					}),
+			),
+		);
+
+		await expect(fetchSources()).rejects.toMatchObject({
+			status: 503,
+			message: "Service Unavailable",
+		});
+	});
+
+	it("omits query string when all param values are undefined", async () => {
+		server.use(
+			http.get(`${API_URL}/runs`, ({ request }) => {
+				const url = new URL(request.url);
+				expect(url.searchParams.toString()).toBe("");
+				return HttpResponse.json([]);
+			}),
+		);
+
+		const result = await fetchRuns({ source: undefined, limit: undefined });
+		expect(result).toEqual([]);
+	});
 });
