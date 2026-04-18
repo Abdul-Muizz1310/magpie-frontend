@@ -3,6 +3,7 @@ import type {
 	Heal,
 	Health,
 	Run,
+	RunItem,
 	ScrapeItem,
 	ScrapeResult,
 	SourceCrudSummary,
@@ -115,6 +116,21 @@ export function makeScrapeResult(overrides: Partial<ScrapeResult> = {}): ScrapeR
 		scraped_at: "2026-04-10T12:00:00Z",
 		run_id: UUID_A,
 		items: [makeScrapeItem()],
+		...overrides,
+	};
+}
+
+export function makeRunItem(overrides: Partial<RunItem> = {}): RunItem {
+	return {
+		id: UUID_B,
+		stable_id: "item-1",
+		url: "https://example.com/a",
+		title: "Example post",
+		content_text: "Example body text",
+		content_hash: "deadbeefcafebabe",
+		first_seen_at: "2026-04-10T11:59:00Z",
+		last_seen_at: "2026-04-10T12:00:00Z",
+		html_snapshot_url: null,
 		...overrides,
 	};
 }

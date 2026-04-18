@@ -4,6 +4,7 @@ import type {
 	Heal,
 	Health,
 	Run,
+	RunItem,
 	ScrapeBatchResponse,
 	ScrapeResult,
 	SourceCrudSummary,
@@ -14,6 +15,7 @@ import {
 	EnqueueResponseSchema,
 	HealSchema,
 	HealthSchema,
+	RunItemSchema,
 	RunSchema,
 	ScrapeBatchResponseSchema,
 	ScrapeResultSchema,
@@ -200,6 +202,16 @@ export async function fetchRun(runId: string, signal?: AbortSignal): Promise<Run
 	return requestJson(`/api/runs/${encodeURIComponent(runId)}`, RunSchema, { signal });
 }
 
+export async function fetchRunItems(
+	runId: string,
+	params?: { limit?: number; offset?: number },
+): Promise<RunItem[]> {
+	return requestJson(
+		`/api/runs/${encodeURIComponent(runId)}/items${buildQuery(params)}`,
+		z.array(RunItemSchema),
+	);
+}
+
 // ── Custom source CRUD (/api/sources) ──────────────────────────────────────
 
 export async function listSourcesCrud(origin?: "file" | "api"): Promise<SourceCrudSummary[]> {
@@ -234,6 +246,7 @@ export type {
 	Heal,
 	Health,
 	Run,
+	RunItem,
 	ScrapeBatchResponse,
 	ScrapeFailure,
 	ScrapeItem,

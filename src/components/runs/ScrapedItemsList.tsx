@@ -1,7 +1,18 @@
 import { ExternalLink } from "lucide-react";
-import type { ScrapeItem } from "@/lib/schemas";
 
-export function ScrapedItemsList({ items }: { items: ReadonlyArray<ScrapeItem> }) {
+// Minimal shape any item-like record must satisfy. Both `ScrapeItem` (from
+// the sync-scrape endpoint) and `RunItem` (from GET /api/runs/{id}/items)
+// conform to this — callers just pass either.
+export type ScrapedItemLike = {
+	stable_id: string;
+	url: string;
+	title: string;
+	content_text: string;
+	content_hash: string;
+	html_snapshot_url?: string | null;
+};
+
+export function ScrapedItemsList({ items }: { items: ReadonlyArray<ScrapedItemLike> }) {
 	if (items.length === 0) {
 		return (
 			<p className="rounded-lg border border-warning/30 bg-warning/5 p-3 font-mono text-xs text-warning">

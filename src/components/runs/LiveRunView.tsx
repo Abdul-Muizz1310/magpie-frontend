@@ -2,12 +2,15 @@
 
 import { AlertTriangle, CheckCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { ErrorAlert } from "@/components/shared/ErrorAlert";
 import { statusDot } from "@/components/shared/StatusBadge";
 import { Prompt } from "@/components/terminal/Prompt";
 import { TerminalWindow } from "@/components/terminal/TerminalWindow";
 import { useRunPoll } from "@/hooks/useRunPoll";
-import type { Run } from "@/lib/schemas";
+import { fetchRunItems } from "@/lib/api";
+import type { Run, RunItem } from "@/lib/schemas";
+import { ScrapedItemsList } from "./ScrapedItemsList";
 
 function RunStats({ run }: { run: Run }) {
 	return (
@@ -23,6 +26,55 @@ function RunStats({ run }: { run: Run }) {
 			{typeof run.duration_ms === "number" && run.duration_ms > 0 && (
 				<span className="text-fg-faint">{(run.duration_ms / 1000).toFixed(1)}s</span>
 			)}
+		</div>
+	);
+}
+
+type ItemsState =
+	| { kind: "loading" }
+	| { kind: "done"; items: RunItem[] }
+	| { kind: "error"; message: string };
+
+function ItemsSection({ runId }: { runId: string }) {
+	const [state, setState] = useState<ItemsState>({ kind: "loading" });
+
+	useEffect(() => {
+		let cancelled = false;
+		setState({ kind: "loading" });
+		fetchRunItems(runId, { limit: 100 })
+			.then((items) => {
+				if (!cancelled) setState({ kind: "done", items });
+			})
+			.catch((err: unknown) => {
+				if (!cancelled) {
+					setState({
+						kind: "error",
+						message: err instanceof Error ? err.message : "Failed to load items",
+					});
+				}
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, [runId]);
+
+	if (state.kind === "loading") {
+		return (
+			<div className="flex items-center gap-2 font-mono text-xs text-fg-muted">
+				<Loader2 className="h-3.5 w-3.5 animate-spin" />
+				loading items…
+			</div>
+		);
+	}
+	if (state.kind === "error") {
+		return <ErrorAlert title="Failed to load items">{state.message}</ErrorAlert>;
+	}
+	return (
+		<div className="flex flex-col gap-2">
+			<div className="font-mono text-[10px] uppercase tracking-wider text-accent-emerald">
+				items ({state.items.length})
+			</div>
+			<ScrapedItemsList items={state.items} />
 		</div>
 	);
 }
@@ -83,33 +135,44 @@ export function LiveRunView({ runId }: { runId: string }) {
 	const iconClass = run.status === "ok" ? "text-success" : "text-error";
 
 	return (
-		<TerminalWindow
-			title={`run.${runId.slice(0, 8)}.log`}
-			statusDot={statusDot(run.status)}
-			statusLabel={run.status}
-			strong
-		>
-			<div className="flex flex-col gap-4">
-				<div className="flex items-center gap-3">
-					<Icon className={`h-5 w-5 ${iconClass}`} />
-					<div>
-						<Prompt kind="output">
-							run finished with status{" "}
-							<span className={run.status === "ok" ? "text-success" : "text-error"}>
-								{run.status}
-							</span>
-						</Prompt>
-						<p className="font-mono text-[11px] text-fg-faint">
-							source:{" "}
-							<Link href={`/sources/${run.source}`} className="text-accent-emerald hover:underline">
-								{run.source}
-							</Link>
-						</p>
+		<div className="flex flex-col gap-5">
+			<TerminalWindow
+				title={`run.${runId.slice(0, 8)}.log`}
+				statusDot={statusDot(run.status)}
+				statusLabel={run.status}
+				strong
+			>
+				<div className="flex flex-col gap-4">
+					<div className="flex items-center gap-3">
+						<Icon className={`h-5 w-5 ${iconClass}`} />
+						<div>
+							<Prompt kind="output">
+								run finished with status{" "}
+								<span className={run.status === "ok" ? "text-success" : "text-error"}>
+									{run.status}
+								</span>
+							</Prompt>
+							<p className="font-mono text-[11px] text-fg-faint">
+								source:{" "}
+								<Link
+									href={`/sources/${run.source}`}
+									className="text-accent-emerald hover:underline"
+								>
+									{run.source}
+								</Link>
+							</p>
+						</div>
 					</div>
+					<RunStats run={run} />
+					{run.error && <ErrorAlert title="scrape error">{run.error}</ErrorAlert>}
 				</div>
-				<RunStats run={run} />
-				{run.error && <ErrorAlert title="scrape error">{run.error}</ErrorAlert>}
-			</div>
-		</TerminalWindow>
+			</TerminalWindow>
+
+			{run.status === "ok" && (
+				<TerminalWindow title={`items.${run.source}.log`} statusDot="emerald" statusLabel="scraped">
+					<ItemsSection runId={runId} />
+				</TerminalWindow>
+			)}
+		</div>
 	);
 }

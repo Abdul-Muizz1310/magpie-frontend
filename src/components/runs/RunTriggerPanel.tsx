@@ -1,38 +1,19 @@
 "use client";
 
-import { Loader2, Play, Send } from "lucide-react";
+import { Loader2, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { ErrorAlert } from "@/components/shared/ErrorAlert";
 import { TerminalWindow } from "@/components/terminal/TerminalWindow";
-import { enqueueScrapeAction, scrapeOnceAction } from "@/lib/actions";
-import type { ScrapeResult } from "@/lib/schemas";
-import { ScrapedItemsList } from "./ScrapedItemsList";
+import { enqueueScrapeAction } from "@/lib/actions";
 
-type State =
-	| { kind: "idle" }
-	| { kind: "sync-running" }
-	| { kind: "sync-done"; result: ScrapeResult }
-	| { kind: "enqueuing" }
-	| { kind: "error"; message: string };
+type State = { kind: "idle" } | { kind: "enqueuing" } | { kind: "error"; message: string };
 
 export function RunTriggerPanel({ source }: { source: string }) {
 	const [maxItems, setMaxItems] = useState(10);
 	const [state, setState] = useState<State>({ kind: "idle" });
 	const [isPending, startTransition] = useTransition();
 	const router = useRouter();
-
-	function handleSync() {
-		setState({ kind: "sync-running" });
-		startTransition(async () => {
-			const result = await scrapeOnceAction(source, maxItems);
-			if (result.ok) {
-				setState({ kind: "sync-done", result: result.data });
-			} else {
-				setState({ kind: "error", message: result.message });
-			}
-		});
-	}
 
 	function handleEnqueue() {
 		setState({ kind: "enqueuing" });
@@ -46,7 +27,7 @@ export function RunTriggerPanel({ source }: { source: string }) {
 		});
 	}
 
-	const busy = isPending || state.kind === "sync-running" || state.kind === "enqueuing";
+	const busy = isPending || state.kind === "enqueuing";
 
 	return (
 		<TerminalWindow title={`trigger.${source}`} statusDot="emerald" statusLabel="ready">
@@ -67,44 +48,24 @@ export function RunTriggerPanel({ source }: { source: string }) {
 					</label>
 					<button
 						type="button"
-						onClick={handleSync}
-						disabled={busy}
-						className="inline-flex items-center gap-1.5 rounded-md border border-accent-emerald/40 bg-accent-emerald/10 px-3 py-1.5 font-mono text-xs text-accent-emerald transition-colors hover:bg-accent-emerald/20 disabled:cursor-not-allowed disabled:opacity-50"
-					>
-						{state.kind === "sync-running" ? (
-							<Loader2 className="h-3.5 w-3.5 animate-spin" />
-						) : (
-							<Play className="h-3.5 w-3.5" />
-						)}
-						run now
-					</button>
-					<button
-						type="button"
 						onClick={handleEnqueue}
 						disabled={busy}
-						className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-3 py-1.5 font-mono text-xs text-foreground transition-colors hover:border-border-bright disabled:cursor-not-allowed disabled:opacity-50"
+						className="inline-flex items-center gap-1.5 rounded-md border border-accent-emerald/40 bg-accent-emerald/10 px-3 py-1.5 font-mono text-xs text-accent-emerald transition-colors hover:bg-accent-emerald/20 disabled:cursor-not-allowed disabled:opacity-50"
 					>
 						{state.kind === "enqueuing" ? (
 							<Loader2 className="h-3.5 w-3.5 animate-spin" />
 						) : (
 							<Send className="h-3.5 w-3.5" />
 						)}
-						enqueue (async)
+						enqueue run
 					</button>
 				</div>
 				<p className="font-mono text-[11px] text-fg-faint">
-					<span className="text-accent-emerald">run now</span> blocks and returns items immediately
-					(good for small scrapes). <span className="text-foreground">enqueue</span> hands off to
-					the Procrastinate worker and redirects to a live run view.
+					Hands off to the Procrastinate worker and redirects to the live run view. Scraped items
+					appear there once the run finishes.
 				</p>
-				{state.kind === "error" && <ErrorAlert title="Trigger failed">{state.message}</ErrorAlert>}
-				{state.kind === "sync-done" && (
-					<div className="flex flex-col gap-2">
-						<div className="font-mono text-[10px] uppercase tracking-wider text-accent-emerald">
-							items ({state.result.items.length})
-						</div>
-						<ScrapedItemsList items={state.result.items} />
-					</div>
+				{state.kind === "error" && (
+					<ErrorAlert title="Failed to enqueue">{state.message}</ErrorAlert>
 				)}
 			</div>
 		</TerminalWindow>

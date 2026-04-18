@@ -7,6 +7,7 @@ import {
 	makeHeal,
 	makeHealth,
 	makeRun,
+	makeRunItem,
 	makeScrapeResult,
 	makeSourceCrudSummary,
 	makeSourceDetail,
@@ -22,6 +23,7 @@ import {
 	fetchHeals,
 	fetchHealth,
 	fetchRun,
+	fetchRunItems,
 	fetchRuns,
 	fetchSource,
 	fetchSources,
@@ -149,6 +151,31 @@ describe("async scrape / job queue", () => {
 		const result = await fetchRun(UUID_A);
 		expect(result.duration_ms).toBe(60_000);
 		expect(result.status).toBe("ok");
+	});
+
+	it("fetchRunItems returns persisted RunItem[]", async () => {
+		server.use(
+			http.get(`${API_URL}/api/runs/${UUID_A}/items`, ({ request }) => {
+				const u = new URL(request.url);
+				expect(u.searchParams.get("limit")).toBe("50");
+				return HttpResponse.json([makeRunItem()]);
+			}),
+		);
+		const items = await fetchRunItems(UUID_A, { limit: 50 });
+		expect(items).toHaveLength(1);
+		expect(items[0].stable_id).toBe("item-1");
+		expect(items[0].content_hash).toBe("deadbeefcafebabe");
+	});
+
+	it("fetchRunItems accepts null html_snapshot_url + empty title/url", async () => {
+		server.use(
+			http.get(`${API_URL}/api/runs/${UUID_A}/items`, () =>
+				HttpResponse.json([makeRunItem({ title: "", url: "", html_snapshot_url: null })]),
+			),
+		);
+		const items = await fetchRunItems(UUID_A);
+		expect(items[0].title).toBe("");
+		expect(items[0].url).toBe("");
 	});
 
 	it("scrapeOnce returns items with stable_id + hash", async () => {
