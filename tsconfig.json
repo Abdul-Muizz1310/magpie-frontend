@@ -18,6 +18,7 @@
 				"name": "next"
 			}
 		],
+		"types": ["vitest/jsdom", "vitest/globals", "@testing-library/jest-dom"],
 		"paths": {
 			"@/*": ["./src/*"]
 		}
@@ -26,6 +27,8 @@
 		"next-env.d.ts",
 		"**/*.ts",
 		"**/*.tsx",
+		"test/**/*.ts",
+		"test/**/*.tsx",
 		".next/types/**/*.ts",
 		".next/dev/types/**/*.ts",
 		"**/*.mts"
