@@ -1,95 +1,31 @@
-import { ExternalLink, GitPullRequest } from "lucide-react";
-import Link from "next/link";
+import type { Metadata } from "next";
+import { HealEntry } from "@/components/heals/HealEntry";
+import { ErrorAlert } from "@/components/shared/ErrorAlert";
+import { Pagination } from "@/components/shared/Pagination";
 import { PageFrame } from "@/components/terminal/PageFrame";
 import { Prompt } from "@/components/terminal/Prompt";
 import { TerminalWindow } from "@/components/terminal/TerminalWindow";
-import type { Heal } from "@/lib/api";
-import { fetchHeals } from "@/lib/api";
+import { getHeals } from "@/lib/data";
+import type { Heal } from "@/lib/schemas";
 
-export const dynamic = "force-dynamic";
+const PAGE_SIZE = 10;
 
-function formatDate(iso: string): string {
-	return new Date(iso).toLocaleString("en-US", {
-		month: "short",
-		day: "numeric",
-		hour: "2-digit",
-		minute: "2-digit",
-	});
-}
+export const metadata: Metadata = {
+	title: "heals — magpie",
+	description: "Every LLM-proposed selector fix: PRs, DB patches, and confidence scores.",
+};
 
-function HealEntry({ heal }: { heal: Heal }) {
-	const oldJson = JSON.stringify(heal.old_config, null, 2);
-	const newJson = JSON.stringify(heal.new_config, null, 2);
+export default async function HealsPage(props: {
+	searchParams: Promise<{ page?: string; source?: string }>;
+}): Promise<React.JSX.Element> {
+	const { page: pageParam, source } = await props.searchParams;
+	const page = Math.max(1, Number(pageParam) || 1);
+	const offset = (page - 1) * PAGE_SIZE;
 
-	return (
-		<TerminalWindow
-			title={`heal.${heal.source}.diff`}
-			statusDot="emerald"
-			statusLabel="healed"
-			className="mb-4 last:mb-0"
-		>
-			<div className="flex flex-col gap-3">
-				{/* Header */}
-				<div className="flex items-center justify-between">
-					<Link
-						href={`/sources/${heal.source}`}
-						className="font-mono text-sm font-semibold text-accent-emerald hover:underline"
-					>
-						{heal.source}
-					</Link>
-					<span className="font-mono text-xs text-fg-faint">{formatDate(heal.created_at)}</span>
-				</div>
-
-				{heal.run_id !== null && (
-					<p className="font-mono text-xs text-fg-faint">Triggered by run #{heal.run_id}</p>
-				)}
-
-				{/* PR link */}
-				<div>
-					{heal.pr_url ? (
-						<a
-							href={heal.pr_url}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="inline-flex items-center gap-1.5 rounded-md border border-accent-emerald/30 bg-accent-emerald/5 px-2.5 py-1 font-mono text-xs text-accent-emerald transition-colors hover:bg-accent-emerald/10"
-						>
-							<GitPullRequest className="h-3.5 w-3.5" />
-							{heal.pr_url.replace("https://github.com/", "")}
-							<ExternalLink className="h-3 w-3" />
-						</a>
-					) : (
-						<span className="inline-flex items-center gap-1.5 rounded-md border border-warning/30 bg-warning/5 px-2.5 py-1 font-mono text-xs text-warning">
-							PR pending
-						</span>
-					)}
-				</div>
-
-				{/* Config diff */}
-				<div className="grid grid-cols-2 gap-2">
-					<div className="rounded-lg border border-error/20 bg-error/5 p-3">
-						<div className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-error">
-							old config
-						</div>
-						<pre className="whitespace-pre-wrap font-mono text-xs text-fg-muted">{oldJson}</pre>
-					</div>
-					<div className="rounded-lg border border-success/20 bg-success/5 p-3">
-						<div className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-success">
-							new config
-						</div>
-						<pre className="whitespace-pre-wrap font-mono text-xs text-fg-muted">{newJson}</pre>
-					</div>
-				</div>
-			</div>
-		</TerminalWindow>
-	);
-}
-
-export default async function HealsPage(): Promise<React.JSX.Element> {
 	let heals: Heal[] = [];
 	let error: string | null = null;
-
 	try {
-		heals = await fetchHeals();
+		heals = await getHeals({ limit: PAGE_SIZE, offset, source });
 	} catch (e) {
 		error = e instanceof Error ? e.message : "Failed to fetch heals";
 	}
@@ -98,7 +34,7 @@ export default async function HealsPage(): Promise<React.JSX.Element> {
 		<PageFrame
 			active="heals"
 			statusLeft="magpie.dev ~/heals"
-			statusRight={`${heals.length} heals · UTF-8`}
+			statusRight={source ? `filter: ${source}` : `page ${page}`}
 		>
 			<div className="flex flex-col gap-10">
 				<section className="flex flex-col gap-5">
@@ -107,26 +43,30 @@ export default async function HealsPage(): Promise<React.JSX.Element> {
 						self-healing <span className="text-accent-emerald">history</span>
 					</h1>
 					<p className="max-w-xl text-sm leading-relaxed text-fg-muted">
-						Every time a scraper breaks and the LLM proposes a fix, it shows up here. Each entry
-						links to the GitHub PR where the selector was patched.
+						Every time a scraper underflows the min-items threshold, an LLM re-derives the broken
+						selector. <span className="text-accent-emerald">file</span>-origin configs get a GitHub
+						PR; <span className="text-accent-teal">api</span>-origin configs get patched directly in
+						Postgres — same healer, different destination.
 					</p>
 				</section>
 
-				<section>
+				<section className="flex flex-col gap-4">
 					{error ? (
-						<div
-							role="alert"
-							className="rounded-xl border border-error/30 bg-error/5 p-4 font-mono text-sm text-error"
-						>
-							{error}
-						</div>
+						<ErrorAlert title="Failed to fetch heals">{error}</ErrorAlert>
 					) : heals.length === 0 ? (
 						<TerminalWindow title="heals.log" statusDot="off" statusLabel="idle">
-							<p className="text-sm text-fg-muted">No heals recorded — all scrapers are healthy.</p>
+							<p className="font-mono text-sm text-fg-muted">
+								{source
+									? `No heals recorded for ${source}.`
+									: page > 1
+										? "No more heals on this page."
+										: "No heals recorded — all scrapers are healthy."}
+							</p>
 						</TerminalWindow>
 					) : (
 						heals.map((heal) => <HealEntry key={heal.id} heal={heal} />)
 					)}
+					<Pagination page={page} hasMore={heals.length >= PAGE_SIZE} />
 				</section>
 			</div>
 		</PageFrame>

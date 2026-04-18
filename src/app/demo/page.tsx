@@ -1,9 +1,13 @@
+import type { Metadata } from "next";
 import { PageFrame } from "@/components/terminal/PageFrame";
 import { Prompt } from "@/components/terminal/Prompt";
 import { TerminalWindow } from "@/components/terminal/TerminalWindow";
-import { fetchHealth, fetchSources } from "@/lib/api";
+import { getHealth, getSources } from "@/lib/data";
 
-export const dynamic = "force-dynamic";
+export const metadata: Metadata = {
+	title: "demo — magpie",
+	description: "How magpie's config-driven, self-healing, async-queued scraping works.",
+};
 
 const YAML_SNIPPET = `name: hackernews
 url: https://news.ycombinator.com
@@ -15,55 +19,67 @@ item:
   fields:
     - { name: title, selector: "span.titleline > a::text" }
     - { name: url, selector: "span.titleline > a::attr(href)" }
+    - { name: id, selector: "::attr(id)" }
   dedupe_key: id
 
 health:
-  min_items: 20`;
+  min_items: 20
+  max_staleness: "24h"`;
 
 const STEPS = [
 	{
 		num: 1,
 		title: "Define a scraper",
-		description: "Write a YAML config — one file per source. No code needed.",
+		description:
+			"Write a YAML config — or use the form builder at /sources/new. Both hit the same Pydantic-validated endpoint.",
 	},
 	{
 		num: 2,
-		title: "Scraper runs on schedule",
-		description: "GitHub Actions cron triggers the scraper every 6 hours.",
+		title: "Run it — sync or async",
+		description:
+			"POST /api/scrape/{src}/once for immediate results, or /enqueue to defer to the Procrastinate worker.",
 	},
 	{
 		num: 3,
-		title: "Site changes, selectors break",
-		description: "The scraper returns 0 items where it used to return 20+.",
+		title: "Content-addressed dedup",
+		description:
+			"Items are SHA-256 hashed. Re-runs produce diffs (new/updated/removed), not dumps. Reappeared items are tracked.",
 	},
 	{
 		num: 4,
-		title: "Healer fires",
-		description: "An LLM analyzes the raw HTML and proposes a new CSS selector.",
+		title: "Healer fires on underflow",
+		description:
+			"If item_count < health.min_items, an LLM analyzes the raw HTML and proposes a new CSS or XPath selector.",
 	},
 	{
 		num: 5,
-		title: "PR opens automatically",
-		description: "A GitHub PR appears with the old/new selector diff and reasoning.",
+		title: "Dual-mode patch",
+		description:
+			"File-origin sources get a GitHub PR labeled scrape:self-heal. Api-origin sources get patched in Postgres, instantly.",
 	},
 	{
 		num: 6,
-		title: "Human reviews and merges",
-		description: "You review the PR, merge it, and the scraper heals itself.",
+		title: "Every attempt is logged",
+		description:
+			"See /heals for confidence scores, reasoning, and links to the PR or the db-patched diff.",
 	},
 ];
 
 export default async function DemoPage(): Promise<React.JSX.Element> {
 	let connected = false;
 	let sourceCount = 0;
+	let version = "";
+	let db = "";
 
 	try {
-		await fetchHealth();
-		connected = true;
-		const sources = await fetchSources();
+		const health = await getHealth();
+		connected = health.db === "ok";
+		version = health.version ?? "";
+		db = health.db;
+		const sources = await getSources();
 		sourceCount = sources.length;
 	} catch {
-		// Backend offline — degrade gracefully
+		// graceful offline
 	}
 
 	return (
@@ -73,7 +89,6 @@ export default async function DemoPage(): Promise<React.JSX.Element> {
 			statusRight={connected ? `backend ok · ${sourceCount} sources` : "backend offline"}
 		>
 			<div className="flex flex-col gap-14">
-				{/* Hero */}
 				<section className="flex flex-col gap-5">
 					<Prompt kind="comment">demo run --interactive</Prompt>
 					<h1 className="font-mono text-4xl font-bold tracking-tight md:text-5xl">
@@ -84,20 +99,20 @@ export default async function DemoPage(): Promise<React.JSX.Element> {
 						</span>{" "}
 						works.
 					</h1>
-					<p className="max-w-xl text-base leading-relaxed text-fg-muted">
-						YAML-defined scrapers that self-heal via LLM + PR.{" "}
+					<p className="max-w-2xl text-base leading-relaxed text-fg-muted">
+						YAML-defined scrapers that self-heal via LLM. Async job queue on Postgres. Dual-mode
+						healing (PR for file-origin, DB patch for runtime). Content-addressed dedup.{" "}
 						<a
 							href="https://github.com/Abdul-Muizz1310/magpie-backend"
 							target="_blank"
 							rel="noopener noreferrer"
 							className="text-accent-emerald hover:underline"
 						>
-							View source
+							view source
 						</a>
 					</p>
 				</section>
 
-				{/* Step cards */}
 				<section>
 					<h2 className="mb-4 font-mono text-xs uppercase tracking-[0.2em] text-accent-emerald">
 						The self-healing flow
@@ -120,7 +135,6 @@ export default async function DemoPage(): Promise<React.JSX.Element> {
 					</div>
 				</section>
 
-				{/* YAML snippet */}
 				<section>
 					<h2 className="mb-4 font-mono text-xs uppercase tracking-[0.2em] text-accent-emerald">
 						Example: hackernews.yaml
@@ -132,10 +146,9 @@ export default async function DemoPage(): Promise<React.JSX.Element> {
 					</TerminalWindow>
 				</section>
 
-				{/* Live status */}
 				<section>
 					<h2 className="mb-4 font-mono text-xs uppercase tracking-[0.2em] text-accent-emerald">
-						Live Status
+						Live status
 					</h2>
 					<TerminalWindow
 						title="health.check"
@@ -146,7 +159,13 @@ export default async function DemoPage(): Promise<React.JSX.Element> {
 							<Prompt kind={connected ? "output" : "comment"}>
 								{connected ? "Connected" : "Backend offline"}
 							</Prompt>
-							{connected && <Prompt kind="output">{sourceCount} sources configured</Prompt>}
+							{connected && (
+								<>
+									<Prompt kind="output">{sourceCount} sources configured</Prompt>
+									<Prompt kind="output">db: {db}</Prompt>
+									{version && <Prompt kind="output">version: {version}</Prompt>}
+								</>
+							)}
 						</div>
 					</TerminalWindow>
 				</section>

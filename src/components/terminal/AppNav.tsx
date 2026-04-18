@@ -1,8 +1,10 @@
 import { Bird } from "lucide-react";
 import Link from "next/link";
+import { Suspense } from "react";
+import { BackendStatusDot } from "@/components/shared/BackendStatusDot";
 
 export type AppNavProps = {
-	active?: "home" | "heals" | "demo";
+	active?: "home" | "heals" | "demo" | "new";
 };
 
 export function AppNav({ active }: AppNavProps) {
@@ -27,6 +29,9 @@ export function AppNav({ active }: AppNavProps) {
 					<Link href="/" className={linkClass("home")}>
 						sources
 					</Link>
+					<Link href="/sources/new" className={linkClass("new")}>
+						new
+					</Link>
 					<Link href="/heals" className={linkClass("heals")}>
 						heals
 					</Link>
@@ -49,6 +54,9 @@ export function AppNav({ active }: AppNavProps) {
 					>
 						api
 					</a>
+					<Suspense fallback={null}>
+						<BackendStatusDot />
+					</Suspense>
 				</div>
 			</div>
 		</nav>
