@@ -26,6 +26,7 @@ import {
 	fetchRunItems,
 	fetchRuns,
 	fetchSource,
+	fetchSourceItems,
 	fetchSources,
 	getSourceDetail,
 	listSourcesCrud,
@@ -176,6 +177,33 @@ describe("async scrape / job queue", () => {
 		const items = await fetchRunItems(UUID_A);
 		expect(items[0].title).toBe("");
 		expect(items[0].url).toBe("");
+	});
+
+	it("fetchRunItems exposes the full scraped data dict", async () => {
+		server.use(
+			http.get(`${API_URL}/api/runs/${UUID_A}/items`, () =>
+				HttpResponse.json([
+					makeRunItem({
+						data: { title: "x", authors: "A, B", id: "2604.14683" },
+					}),
+				]),
+			),
+		);
+		const items = await fetchRunItems(UUID_A);
+		expect(items[0].data).toMatchObject({ authors: "A, B", id: "2604.14683" });
+	});
+
+	it("fetchSourceItems returns source-scoped items with data dicts", async () => {
+		server.use(
+			http.get(`${API_URL}/sources/hackernews/items`, ({ request }) => {
+				const u = new URL(request.url);
+				expect(u.searchParams.get("limit")).toBe("25");
+				return HttpResponse.json([makeRunItem(), makeRunItem({ stable_id: "item-2" })]);
+			}),
+		);
+		const items = await fetchSourceItems("hackernews", { limit: 25 });
+		expect(items).toHaveLength(2);
+		expect(items[0].data).toBeDefined();
 	});
 
 	it("scrapeOnce returns items with stable_id + hash", async () => {

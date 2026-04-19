@@ -1,4 +1,4 @@
-import { ArrowLeft, Pencil } from "lucide-react";
+import { ArrowLeft, Database, Pencil } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -87,7 +87,13 @@ export default async function SourceDetailPage(props: {
 					</div>
 					<p className="text-sm leading-relaxed text-fg-muted">{source.description}</p>
 					<div className="flex flex-wrap items-center gap-4 font-mono text-xs text-fg-faint">
-						<span>{source.item_count} items</span>
+						<Link
+							href={`/sources/${name}/items`}
+							className="inline-flex items-center gap-1.5 rounded-md border border-accent-teal/30 bg-accent-teal/5 px-2.5 py-1 text-accent-teal transition-colors hover:bg-accent-teal/10"
+						>
+							<Database className="h-3.5 w-3.5" />
+							{source.item_count} items
+						</Link>
 						<span>
 							last run: <RelativeTime iso={source.last_run_at} />
 						</span>

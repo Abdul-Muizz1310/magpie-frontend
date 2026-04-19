@@ -123,10 +123,11 @@ export const ScrapeResultSchema = z.object({
 });
 export type ScrapeResult = z.infer<typeof ScrapeResultSchema>;
 
-// Persisted item from the `items` table, scoped to a run's time window by
-// GET /api/runs/{id}/items. Similar to ScrapeItem but without the min_length
-// guards — data in the DB may have been scraped before a config change that
-// added a url/title field.
+// Persisted item from the `items` table. Returned by both
+// GET /api/runs/{id}/items (run-scoped) and GET /sources/{name}/items
+// (source-scoped, newest first). `data` carries the full scraped dict so
+// callers can render every field the source captures, not just the
+// normalized url/title/content_text triple.
 export const RunItemSchema = z.object({
 	id: z.string(),
 	stable_id: z.string(),
@@ -137,6 +138,7 @@ export const RunItemSchema = z.object({
 	first_seen_at: z.string(),
 	last_seen_at: z.string(),
 	html_snapshot_url: z.string().nullable().optional(),
+	data: z.record(z.string(), z.unknown()),
 });
 export type RunItem = z.infer<typeof RunItemSchema>;
 

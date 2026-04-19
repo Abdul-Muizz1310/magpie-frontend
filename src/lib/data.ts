@@ -4,11 +4,20 @@ import {
 	fetchHealth as apiFetchHealth,
 	fetchRuns as apiFetchRuns,
 	fetchSource as apiFetchSource,
+	fetchSourceItems as apiFetchSourceItems,
 	fetchSources as apiFetchSources,
 	getSourceDetail as apiGetSourceDetail,
 	listSourcesCrud as apiListSourcesCrud,
 } from "./api";
-import type { Heal, Health, Run, SourceCrudSummary, SourceDetail, SourceSummary } from "./schemas";
+import type {
+	Heal,
+	Health,
+	Run,
+	RunItem,
+	SourceCrudSummary,
+	SourceDetail,
+	SourceSummary,
+} from "./schemas";
 
 // All backend-facing reads are request-time dynamic. `connection()` tells
 // Cache Components the data must be fetched per request (no build-time
@@ -56,4 +65,12 @@ export async function getHeals(params: {
 export async function getHealth(): Promise<Health> {
 	await connection();
 	return apiFetchHealth();
+}
+
+export async function getSourceItems(
+	name: string,
+	params: { limit?: number; offset?: number } = {},
+): Promise<RunItem[]> {
+	await connection();
+	return apiFetchSourceItems(name, params);
 }

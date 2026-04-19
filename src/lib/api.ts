@@ -212,6 +212,16 @@ export async function fetchRunItems(
 	);
 }
 
+export async function fetchSourceItems(
+	name: string,
+	params?: { limit?: number; offset?: number },
+): Promise<RunItem[]> {
+	return requestJson(
+		`/sources/${encodeURIComponent(name)}/items${buildQuery(params)}`,
+		z.array(RunItemSchema),
+	);
+}
+
 // ── Custom source CRUD (/api/sources) ──────────────────────────────────────
 
 export async function listSourcesCrud(origin?: "file" | "api"): Promise<SourceCrudSummary[]> {

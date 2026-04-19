@@ -131,6 +131,7 @@ export function makeRunItem(overrides: Partial<RunItem> = {}): RunItem {
 		first_seen_at: "2026-04-10T11:59:00Z",
 		last_seen_at: "2026-04-10T12:00:00Z",
 		html_snapshot_url: null,
+		data: { title: "Example post", url: "https://example.com/a" },
 		...overrides,
 	};
 }

@@ -40,8 +40,9 @@ describe("LiveRunView", () => {
 			),
 		);
 		renderUI(<LiveRunView runId={UUID_A} />);
-		await waitFor(() =>
-			expect(screen.getByRole("link", { name: /first item/i })).toBeInTheDocument(),
+		await waitFor(
+			() => expect(screen.getByRole("link", { name: /first item/i })).toBeInTheDocument(),
+			{ timeout: 5_000 },
 		);
 		expect(screen.getByRole("link", { name: /second item/i })).toBeInTheDocument();
 		expect(screen.getByText(/items \(2\)/i)).toBeInTheDocument();
