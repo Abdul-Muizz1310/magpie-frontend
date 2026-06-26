@@ -210,8 +210,8 @@ pnpm test -- --coverage      # coverage report
 
 | Metric | Value |
 |---|---|
-| **Unit tests** | 61 tests |
-| **Line coverage** | **100%** |
+| **Unit tests** | 149 tests |
+| **Line coverage** | **89%** |
 | **Framework** | Vitest + Testing Library + MSW 2 |
 | **API mocking** | MSW 2 request handlers — no real backend in tests |
 | **Validation** | Zod schemas validated in test assertions |
