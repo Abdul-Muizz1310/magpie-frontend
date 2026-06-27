@@ -105,35 +105,41 @@ flowchart TD
 
 ```
 src/
-├── app/
+├── app/                              # Next.js App Router (thin RSC pages)
 │   ├── page.tsx                      # Home: sources list
-│   ├── page.test.tsx                 # Sources page tests
 │   ├── layout.tsx                    # Root layout + metadata
+│   ├── loading.tsx                   # Route loading UI
+│   ├── error.tsx                     # Route error boundary
+│   ├── not-found.tsx                 # 404
 │   ├── globals.css                   # Tailwind + terminal CSS
-│   ├── sources/[name]/
-│   │   ├── page.tsx                  # Source detail + runs
-│   │   └── page.test.tsx
-│   ├── heals/
-│   │   ├── page.tsx                  # Self-heal PR history
-│   │   └── page.test.tsx
-│   └── demo/
-│       ├── page.tsx                  # Interactive demo
-│       └── page.test.tsx
+│   ├── sources/
+│   │   ├── new/page.tsx              # Create a source
+│   │   └── [name]/
+│   │       ├── page.tsx              # Source detail + runs
+│   │       ├── edit/page.tsx         # Edit source config
+│   │       └── items/page.tsx        # Scraped items
+│   ├── runs/[id]/page.tsx            # Live run view
+│   ├── heals/page.tsx                # Self-heal PR history
+│   └── demo/page.tsx                 # Interactive demo
 ├── components/
-│   └── terminal/
-│       ├── TerminalWindow.tsx        # Terminal chrome wrapper
-│       ├── TerminalWindow.test.tsx
-│       ├── AppNav.tsx                # Navigation bar
-│       ├── PageFrame.tsx             # Page layout frame
-│       ├── Prompt.tsx                # Terminal prompt component
-│       ├── Prompt.test.tsx
-│       └── StatusBar.tsx             # Bottom status bar
+│   ├── terminal/                     # Chrome: AppNav, PageFrame, Prompt, StatusBar, TerminalWindow
+│   ├── sources/                      # SourceCard, OriginBadge, DeleteSourceButton
+│   ├── runs/                         # LiveRunView, RunRow, RunTriggerPanel, ScrapedItemsList
+│   ├── heals/                        # HealDiff, HealEntry
+│   ├── editor/                       # SourceEditor, FormBuilder, YamlTextarea
+│   └── shared/                       # StatusBadge, Pagination, RelativeTime, ErrorAlert, BackendStatusDot
+├── hooks/
+│   └── useRunPoll.ts                 # Live run-status polling
 └── lib/
-    ├── api.ts                        # Fetch + Zod-validated API calls
-    ├── api.test.ts                   # API client tests
-    ├── utils.ts                      # Utility helpers
-    └── test-utils.tsx                # MSW setup + test helpers
+    ├── api.ts                        # Fetch wrapper for the backend
+    ├── data.ts                       # Server-side data fetching
+    ├── actions.ts                    # Server actions (create / edit / delete / trigger)
+    ├── schemas.ts                    # Zod schemas (API boundary validation)
+    ├── yaml.ts                       # YAML <-> form-state conversion
+    └── utils.ts                      # Utility helpers
 ```
+
+Component and `lib` unit tests are co-located as `*.test.tsx` / `*.test.ts` next to the files they cover (omitted above for brevity).
 
 > **Rule:** Server Components fetch data. Client Components handle interactivity. `lib/` owns all external I/O and validation.
 

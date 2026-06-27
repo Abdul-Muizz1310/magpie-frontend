@@ -92,26 +92,36 @@ flowchart TD
 
 ```
 src/
-├── app/
+├── app/                        # App Router (thin RSC pages)
 │   ├── layout.tsx              # Root layout (fonts, metadata, bg styles)
 │   ├── page.tsx                # Sources list (/)
-│   ├── sources/[name]/
-│   │   └── page.tsx            # Source detail with run timeline
-│   ├── heals/
-│   │   └── page.tsx            # Heal history with config diffs
-│   └── demo/
-│       └── page.tsx            # Interactive demo walkthrough
+│   ├── loading.tsx / error.tsx / not-found.tsx
+│   ├── sources/
+│   │   ├── new/page.tsx        # Create a source
+│   │   └── [name]/page.tsx     # Source detail + run timeline
+│   │       (+ edit/, items/ subroutes)
+│   ├── runs/[id]/page.tsx      # Live run view
+│   ├── heals/page.tsx          # Heal history with config diffs
+│   └── demo/page.tsx           # Interactive demo walkthrough
 ├── components/
-│   └── terminal/
-│       ├── PageFrame.tsx       # Outer layout chrome (nav + status + content)
-│       ├── TerminalWindow.tsx  # Retro window with title bar + body
-│       ├── AppNav.tsx          # Route navigation links
-│       └── StatusBar.tsx       # Backend health check indicator
-├── lib/
-│   ├── api.ts                  # Typed API client (Zod-validated)
-│   └── test-utils.tsx          # Shared test helpers
-└── test-setup.ts               # Vitest global setup (cleanup, jest-dom)
+│   ├── terminal/               # Chrome: PageFrame, TerminalWindow, AppNav, StatusBar, Prompt
+│   ├── sources/                # SourceCard, OriginBadge, DeleteSourceButton
+│   ├── runs/                   # LiveRunView, RunRow, RunTriggerPanel, ScrapedItemsList
+│   ├── heals/                  # HealDiff, HealEntry
+│   ├── editor/                 # SourceEditor, FormBuilder, YamlTextarea
+│   └── shared/                 # StatusBadge, Pagination, RelativeTime, ErrorAlert, BackendStatusDot
+├── hooks/
+│   └── useRunPoll.ts           # Live run-status polling
+└── lib/
+    ├── api.ts                  # Backend fetch wrapper
+    ├── data.ts                 # Server-side data fetching
+    ├── actions.ts              # Server actions (create / edit / delete / trigger)
+    ├── schemas.ts              # Zod schemas (API boundary validation)
+    ├── yaml.ts                 # YAML <-> form-state conversion
+    └── utils.ts                # Utility helpers
 ```
+
+Component and `lib` tests are co-located as `*.test.tsx` / `*.test.ts`.
 
 ## Data flow
 
