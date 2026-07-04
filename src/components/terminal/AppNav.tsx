@@ -1,6 +1,7 @@
 import { Bird } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
+import { AuthNavControl } from "@/components/auth/AuthNavControl";
 import { BackendStatusDot } from "@/components/shared/BackendStatusDot";
 
 export type AppNavProps = {
@@ -54,6 +55,7 @@ export function AppNav({ active }: AppNavProps) {
 					>
 						api
 					</a>
+					<AuthNavControl />
 					<Suspense fallback={null}>
 						<BackendStatusDot />
 					</Suspense>

@@ -12,6 +12,7 @@ import {
 	type SourceSubmission,
 } from "./api";
 import type { ScrapeResult, SourceDetail } from "./schemas";
+import { requireAdmin } from "./session";
 
 // Server actions return a discriminated-union result so client components
 // can render validation errors without throwing across the client boundary.
@@ -45,6 +46,8 @@ function invalidateSourceRoutes(name?: string) {
 export async function createSourceAction(
 	body: SourceSubmission,
 ): Promise<ActionResult<SourceDetail>> {
+	const auth = await requireAdmin("createSource");
+	if (!auth.ok) return auth;
 	try {
 		const data = await apiCreateSource(body);
 		invalidateSourceRoutes(data.name);
@@ -58,6 +61,8 @@ export async function updateSourceAction(
 	name: string,
 	body: SourceSubmission,
 ): Promise<ActionResult<SourceDetail>> {
+	const auth = await requireAdmin("updateSource");
+	if (!auth.ok) return auth;
 	try {
 		const data = await apiUpdateSource(name, body);
 		invalidateSourceRoutes(name);
@@ -68,6 +73,8 @@ export async function updateSourceAction(
 }
 
 export async function deleteSourceAction(name: string): Promise<ActionResult<null>> {
+	const auth = await requireAdmin("deleteSource");
+	if (!auth.ok) return auth;
 	try {
 		await apiDeleteSource(name);
 		invalidateSourceRoutes(name);
@@ -83,6 +90,8 @@ export async function enqueueScrapeAction(
 	source: string,
 	maxItems = 10,
 ): Promise<ActionResult<EnqueueResponse>> {
+	const auth = await requireAdmin("enqueueScrape");
+	if (!auth.ok) return auth;
 	try {
 		const data = await apiEnqueueScrape(source, maxItems);
 		invalidateSourceRoutes(source);
@@ -96,6 +105,8 @@ export async function scrapeOnceAction(
 	source: string,
 	maxItems = 10,
 ): Promise<ActionResult<ScrapeResult>> {
+	const auth = await requireAdmin("scrapeOnce");
+	if (!auth.ok) return auth;
 	try {
 		const data = await apiScrapeOnce(source, maxItems);
 		invalidateSourceRoutes(source);
