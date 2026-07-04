@@ -48,7 +48,7 @@ export function AppNav({ active }: AppNavProps) {
 						github
 					</a>
 					<a
-						href="https://magpie-backend-izzu.onrender.com/docs"
+						href="https://magpie-backend-t4bb.onrender.com/docs"
 						target="_blank"
 						rel="noopener noreferrer"
 						className="transition-colors hover:text-foreground"

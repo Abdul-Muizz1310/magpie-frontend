@@ -3,7 +3,7 @@
 > ✨ **Next.js 16 dashboard for YAML-defined scrapers that self-heal.**
 > Terminal aesthetic. Emerald accent. Magpies collect shiny things.
 
-🌐 [Live App](https://magpie-frontend-three.vercel.app) · 🔙 [Backend Repo](https://github.com/Abdul-Muizz1310/magpie-backend) · 🔗 [Backend API](https://magpie-backend-izzu.onrender.com/health) · 🚀 [Quickstart](#-run-locally)
+🌐 [Live App](https://magpie-frontend-three.vercel.app) · 🔙 [Backend Repo](https://github.com/Abdul-Muizz1310/magpie-backend) · 🔗 [Backend API](https://magpie-backend-t4bb.onrender.com/health) · 🚀 [Quickstart](#-run-locally)
 
 ![next](https://img.shields.io/badge/Next.js-16-000000?style=flat-square&logo=nextdotjs&logoColor=white)
 ![ts](https://img.shields.io/badge/TypeScript-5.9%20strict-3178c6?style=flat-square&logo=typescript&logoColor=white)
@@ -21,7 +21,7 @@
 $ pnpm dev
   ▲ Next.js 16.0.0 (Turbopack)
   - Local:   http://localhost:3000
-  - API:     https://magpie-backend-izzu.onrender.com
+  - API:     https://magpie-backend-t4bb.onrender.com
 
 [sources]    6 configured scrapers · 4 healthy · 1 healing · 1 broken
 [detail]     hackernews · 12 runs · 342 items · last: 2h ago

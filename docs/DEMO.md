@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - Browser with internet access
-- magpie-backend running at `https://magpie-backend-izzu.onrender.com`
+- magpie-backend running at `https://magpie-backend-t4bb.onrender.com`
 
 ## Live demo (production)
 
