@@ -72,11 +72,12 @@ export default async function DemoPage(): Promise<React.JSX.Element> {
 	let db = "";
 
 	try {
-		const health = await getHealth();
+		// Independent reads — issue them concurrently so a cold-starting backend
+		// isn't hit with two serial round-trips on the showcase page (OPT-1).
+		const [health, sources] = await Promise.all([getHealth(), getSources()]);
 		connected = health.db === "ok";
 		version = health.version ?? "";
 		db = health.db;
-		const sources = await getSources();
 		sourceCount = sources.length;
 	} catch {
 		// graceful offline

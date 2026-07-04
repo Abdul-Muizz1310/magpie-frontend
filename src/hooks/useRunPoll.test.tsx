@@ -74,4 +74,22 @@ describe("useRunPoll", () => {
 		const { result } = renderHook(() => useRunPoll(UUID_A));
 		await waitFor(() => expect(result.current.kind).toBe("error"));
 	});
+
+	it("stops polling and surfaces a 'stalled' state for a wedged non-terminal run (REL-2)", async () => {
+		let call = 0;
+		server.use(
+			http.get(`${API_URL}/api/runs/${UUID_A}`, () => {
+				call += 1;
+				// Never reaches a terminal status — simulates a stuck/queued run.
+				return HttpResponse.json(makeRun({ status: "queued", ended_at: null }));
+			}),
+		);
+		// Tiny wall-clock cap so the stall triggers fast instead of after 5 min.
+		const { result } = renderHook(() => useRunPoll(UUID_A, { maxDurationMs: 5 }));
+		await waitFor(() => expect(result.current.kind).toBe("stalled"), { timeout: 5_000 });
+		const callsAtStall = call;
+		// Confirm polling has actually stopped (no further requests after stalling).
+		await new Promise((r) => setTimeout(r, 1_200));
+		expect(call).toBe(callsAtStall);
+	}, 10_000);
 });

@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import type { RunStatus } from "@/lib/schemas";
 import { StatusBadge, statusDot } from "./StatusBadge";
 
 describe("StatusBadge", () => {
@@ -27,7 +28,13 @@ describe("statusDot", () => {
 	it("maps queued → off", () => {
 		expect(statusDot("queued")).toBe("off");
 	});
-	it("falls back to off for unknown", () => {
-		expect(statusDot("mystery")).toBe("off");
+	it("maps null (never run) → off", () => {
+		expect(statusDot(null)).toBe("off");
+	});
+	it("fails loudly on an out-of-enum status instead of silently defaulting", () => {
+		// Negative-space: a value outside RunStatusSchema must never render a
+		// generic dot — it should throw (assertNever), forcing the caller to
+		// handle new variants explicitly.
+		expect(() => statusDot("mystery" as unknown as RunStatus)).toThrow();
 	});
 });

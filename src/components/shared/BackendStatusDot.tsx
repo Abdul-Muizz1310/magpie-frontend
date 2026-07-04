@@ -12,6 +12,7 @@ export function BackendStatusDot() {
 	useEffect(() => {
 		const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 		let cancelled = false;
+		let interval: ReturnType<typeof setInterval> | null = null;
 
 		async function tick() {
 			try {
@@ -32,11 +33,31 @@ export function BackendStatusDot() {
 			}
 		}
 
-		tick();
-		const t = setInterval(tick, 30_000);
+		// Poll only while the tab is visible. Backgrounded/idle tabs would
+		// otherwise ping the free-tier backend every 30s indefinitely, preventing
+		// it from ever idling and generating steady unnecessary load (REL-3).
+		function start() {
+			if (interval !== null) return;
+			tick();
+			interval = setInterval(tick, 30_000);
+		}
+		function stop() {
+			if (interval !== null) {
+				clearInterval(interval);
+				interval = null;
+			}
+		}
+		function onVisibility() {
+			if (document.visibilityState === "visible") start();
+			else stop();
+		}
+
+		if (document.visibilityState === "visible") start();
+		document.addEventListener("visibilitychange", onVisibility);
 		return () => {
 			cancelled = true;
-			clearInterval(t);
+			stop();
+			document.removeEventListener("visibilitychange", onVisibility);
 		};
 	}, []);
 

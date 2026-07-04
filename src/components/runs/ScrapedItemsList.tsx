@@ -17,8 +17,12 @@ export type ScrapedItemLike = {
 	data?: Record<string, unknown>;
 };
 
+// Only http(s) is safe to render as a clickable link. `item.url` /
+// `html_snapshot_url` are derived from third-party pages magpie scrapes, so an
+// attacker-controlled `data:` (or `javascript:`) scheme must never become a
+// clickable anchor — it falls back to plain text instead.
 function hasAbsoluteUrl(url: string): boolean {
-	return /^(https?:|mailto:|data:)/i.test(url);
+	return /^https?:\/\//i.test(url);
 }
 
 // Keys that are already rendered through dedicated UI (title link, snapshot,

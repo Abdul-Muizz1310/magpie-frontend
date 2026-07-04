@@ -1,13 +1,20 @@
 "use client";
 
-import { Loader2, Send } from "lucide-react";
+import { Loader2, Send, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { ErrorAlert } from "@/components/shared/ErrorAlert";
 import { TerminalWindow } from "@/components/terminal/TerminalWindow";
-import { enqueueScrapeAction } from "@/lib/actions";
+import { enqueueScrapeAction, scrapeOnceAction } from "@/lib/actions";
+import type { ScrapeResult } from "@/lib/schemas";
+import { ScrapedItemsList } from "./ScrapedItemsList";
 
-type State = { kind: "idle" } | { kind: "enqueuing" } | { kind: "error"; message: string };
+type State =
+	| { kind: "idle" }
+	| { kind: "enqueuing" }
+	| { kind: "scraping" }
+	| { kind: "scraped"; result: ScrapeResult }
+	| { kind: "error"; message: string };
 
 export function RunTriggerPanel({ source }: { source: string }) {
 	const [maxItems, setMaxItems] = useState(10);
@@ -27,7 +34,19 @@ export function RunTriggerPanel({ source }: { source: string }) {
 		});
 	}
 
-	const busy = isPending || state.kind === "enqueuing";
+	function handleScrapeNow() {
+		setState({ kind: "scraping" });
+		startTransition(async () => {
+			const result = await scrapeOnceAction(source, maxItems);
+			if (result.ok) {
+				setState({ kind: "scraped", result: result.data });
+			} else {
+				setState({ kind: "error", message: result.message });
+			}
+		});
+	}
+
+	const busy = isPending || state.kind === "enqueuing" || state.kind === "scraping";
 
 	return (
 		<TerminalWindow title={`trigger.${source}`} statusDot="emerald" statusLabel="ready">
@@ -59,13 +78,36 @@ export function RunTriggerPanel({ source }: { source: string }) {
 						)}
 						enqueue run
 					</button>
+					<button
+						type="button"
+						onClick={handleScrapeNow}
+						disabled={busy}
+						className="inline-flex items-center gap-1.5 rounded-md border border-accent-teal/40 bg-accent-teal/10 px-3 py-1.5 font-mono text-xs text-accent-teal transition-colors hover:bg-accent-teal/20 disabled:cursor-not-allowed disabled:opacity-50"
+					>
+						{state.kind === "scraping" ? (
+							<Loader2 className="h-3.5 w-3.5 animate-spin" />
+						) : (
+							<Zap className="h-3.5 w-3.5" />
+						)}
+						scrape now
+					</button>
 				</div>
 				<p className="font-mono text-[11px] text-fg-faint">
-					Hands off to the Procrastinate worker and redirects to the live run view. Scraped items
-					appear there once the run finishes.
+					<span className="text-accent-emerald">enqueue run</span> hands off to the Procrastinate
+					worker and redirects to the live run view.{" "}
+					<span className="text-accent-teal">scrape now</span> runs synchronously and shows the
+					scraped items inline below.
 				</p>
 				{state.kind === "error" && (
-					<ErrorAlert title="Failed to enqueue">{state.message}</ErrorAlert>
+					<ErrorAlert title="Scrape trigger failed">{state.message}</ErrorAlert>
+				)}
+				{state.kind === "scraped" && (
+					<div className="flex flex-col gap-2">
+						<div className="font-mono text-[10px] uppercase tracking-wider text-accent-teal">
+							scraped {state.result.items.length} items · run {state.result.run_id.slice(0, 8)}
+						</div>
+						<ScrapedItemsList items={state.result.items} />
+					</div>
 				)}
 			</div>
 		</TerminalWindow>

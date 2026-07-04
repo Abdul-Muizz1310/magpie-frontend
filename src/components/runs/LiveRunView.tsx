@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, CheckCircle, Loader2 } from "lucide-react";
+import { AlertTriangle, CheckCircle, Clock, Loader2, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ErrorAlert } from "@/components/shared/ErrorAlert";
@@ -115,6 +115,42 @@ export function LiveRunView({ runId }: { runId: string }) {
 						</div>
 					</div>
 					{run && <RunStats run={run} />}
+				</div>
+			</TerminalWindow>
+		);
+	}
+
+	if (state.kind === "stalled") {
+		return (
+			<TerminalWindow
+				title={`run.${runId.slice(0, 8)}.log`}
+				statusDot="yellow"
+				statusLabel="pending"
+			>
+				<div className="flex flex-col gap-4">
+					<div className="flex items-center gap-3">
+						<Clock className="h-5 w-5 text-warning" />
+						<div>
+							<Prompt kind="output">
+								still pending — the run hasn't finished after several minutes.
+							</Prompt>
+							<p className="font-mono text-[11px] text-fg-faint">
+								The worker may be cold-starting or backed up. Polling stopped to avoid hammering the
+								backend.
+							</p>
+						</div>
+					</div>
+					{state.run && <RunStats run={state.run} />}
+					<button
+						type="button"
+						onClick={() => {
+							window.location.reload();
+						}}
+						className="inline-flex items-center gap-1.5 self-start rounded-md border border-accent-emerald/30 bg-accent-emerald/5 px-3 py-1.5 font-mono text-xs text-accent-emerald transition-colors hover:bg-accent-emerald/10"
+					>
+						<RotateCcw className="h-3.5 w-3.5" />
+						resume polling
+					</button>
 				</div>
 			</TerminalWindow>
 		);

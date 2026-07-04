@@ -75,6 +75,24 @@ type RequestInit = {
 	signal?: AbortSignal;
 };
 
+export const REQUEST_TIMEOUT_MS = 45_000;
+
+/**
+ * Build the signal for an outbound request. The timeout ALWAYS applies, even
+ * when a caller passes its own signal (e.g. the poll loop's AbortController):
+ * we combine both with `AbortSignal.any` so a hung fetch still rejects after the
+ * timeout and the caller's catch/backoff path can recover. Previously a
+ * caller-supplied signal replaced the timeout entirely (REL-1), so a stalled
+ * connection left the awaited promise unsettled and the view stuck forever.
+ */
+export function buildRequestSignal(
+	callerSignal: AbortSignal | undefined,
+	timeoutMs: number = REQUEST_TIMEOUT_MS,
+): AbortSignal {
+	const timeout = AbortSignal.timeout(timeoutMs);
+	return callerSignal ? AbortSignal.any([callerSignal, timeout]) : timeout;
+}
+
 async function rawRequest(path: string, init: RequestInit = {}): Promise<Response> {
 	const { method = "GET", body, signal } = init;
 	const headers: Record<string, string> = {};
@@ -83,7 +101,7 @@ async function rawRequest(path: string, init: RequestInit = {}): Promise<Respons
 		method,
 		headers,
 		body: body === undefined ? undefined : JSON.stringify(body),
-		signal: signal ?? AbortSignal.timeout(45_000),
+		signal: buildRequestSignal(signal),
 	});
 }
 

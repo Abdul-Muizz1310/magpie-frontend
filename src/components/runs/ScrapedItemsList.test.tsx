@@ -51,6 +51,26 @@ describe("ScrapedItemsList", () => {
 		expect(screen.getByText("Example post")).toBeInTheDocument();
 	});
 
+	it("does not render a clickable link for a data: URI (scraper-controlled scheme)", () => {
+		const dataUriItem: ScrapeItem = {
+			...sampleItem,
+			url: "data:text/html,<script>alert(1)</script>",
+		};
+		render(<ScrapedItemsList items={[dataUriItem]} />);
+		// data:/javascript: schemes must never become an <a href> — only http(s).
+		expect(screen.queryByRole("link", { name: /example post/i })).toBeNull();
+		expect(screen.getByText("Example post")).toBeInTheDocument();
+	});
+
+	it("does not render a clickable snapshot link for a data: URI", () => {
+		const dataSnapshotItem: ScrapeItem = {
+			...sampleItem,
+			html_snapshot_url: "data:text/html,<h1>x</h1>",
+		};
+		render(<ScrapedItemsList items={[dataSnapshotItem]} />);
+		expect(screen.queryByRole("link", { name: /snapshot/i })).toBeNull();
+	});
+
 	it("renders plain text when url is empty", () => {
 		const noUrlItem: ScrapeItem = { ...sampleItem, url: "" };
 		render(<ScrapedItemsList items={[noUrlItem]} />);

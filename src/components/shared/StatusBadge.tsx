@@ -1,5 +1,6 @@
-import { Activity, AlertTriangle, CheckCircle, Clock, Loader2, XCircle } from "lucide-react";
+import { CheckCircle, Clock, Loader2, XCircle } from "lucide-react";
 import type { RunStatus } from "@/lib/schemas";
+import { assertNever } from "@/lib/utils";
 
 const COLOR_MAP: Record<RunStatus, string> = {
 	queued: "border-fg-faint/40 bg-fg-faint/10 text-fg-muted",
@@ -8,7 +9,13 @@ const COLOR_MAP: Record<RunStatus, string> = {
 	error: "border-error/40 bg-error/10 text-error",
 };
 
-export function statusIcon(status: RunStatus | string | null) {
+// `status` is the Zod-validated RunStatus (or null when a source has never run).
+// Switches are exhaustive over the closed enum: adding a member to
+// RunStatusSchema without handling it here is a compile error (assertNever), and
+// an out-of-enum value at runtime fails loudly rather than silently rendering a
+// generic icon.
+export function statusIcon(status: RunStatus | null) {
+	if (status === null) return <Clock className="h-4 w-4 text-fg-faint" />;
 	switch (status) {
 		case "ok":
 			return <CheckCircle className="h-4 w-4 text-success" />;
@@ -18,18 +25,13 @@ export function statusIcon(status: RunStatus | string | null) {
 			return <Clock className="h-4 w-4 text-fg-muted" />;
 		case "error":
 			return <XCircle className="h-4 w-4 text-error" />;
-		case "empty":
-			return <AlertTriangle className="h-4 w-4 text-warning" />;
-		case "healed":
-			return <Activity className="h-4 w-4 text-accent-teal" />;
 		default:
-			return <Clock className="h-4 w-4 text-fg-faint" />;
+			return assertNever(status);
 	}
 }
 
-export function statusDot(
-	status: RunStatus | string | null,
-): "green" | "yellow" | "red" | "emerald" | "off" {
+export function statusDot(status: RunStatus | null): "green" | "red" | "emerald" | "off" {
+	if (status === null) return "off";
 	switch (status) {
 		case "ok":
 			return "green";
@@ -39,12 +41,8 @@ export function statusDot(
 			return "red";
 		case "queued":
 			return "off";
-		case "empty":
-			return "yellow";
-		case "healed":
-			return "emerald";
 		default:
-			return "off";
+			return assertNever(status);
 	}
 }
 

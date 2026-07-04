@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertTriangle, RotateCcw } from "lucide-react";
+import { useEffect } from "react";
 import { PageFrame } from "@/components/terminal/PageFrame";
 import { TerminalWindow } from "@/components/terminal/TerminalWindow";
 
@@ -11,6 +12,14 @@ export default function GlobalError({
 	error: Error & { digest?: string };
 	reset: () => void;
 }) {
+	// Log the raw error (with its digest) to the console for the operator; never
+	// render `error.message` verbatim to the end user. ApiError messages are
+	// built from the backend's Pydantic `detail`, which can expose internal
+	// field paths / implementation details to an anonymous visitor.
+	useEffect(() => {
+		console.error("Unhandled error", error);
+	}, [error]);
+
 	return (
 		<PageFrame statusLeft="magpie.dev ~/error" statusRight="something broke">
 			<div className="flex flex-col gap-8">
@@ -23,7 +32,8 @@ export default function GlobalError({
 							</h1>
 						</div>
 						<pre className="whitespace-pre-wrap rounded-lg border border-error/30 bg-error/5 p-3 font-mono text-xs text-error">
-							{error.message || "Unknown error"}
+							An unexpected error occurred while rendering this page. The details have been logged.
+							Try again, and if it keeps happening, check the backend status.
 						</pre>
 						{error.digest && (
 							<p className="font-mono text-xs text-fg-faint">digest: {error.digest}</p>

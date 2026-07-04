@@ -17,6 +17,7 @@ import {
 import { server } from "../../test/msw/server";
 import {
 	ApiError,
+	buildRequestSignal,
 	createSource,
 	deleteSource,
 	enqueueScrape,
@@ -320,6 +321,33 @@ describe("custom-source CRUD (/api/sources)", () => {
 			status: 409,
 			message: expect.stringContaining("already exists"),
 		});
+	});
+});
+
+describe("buildRequestSignal (REL-1: timeout always applies)", () => {
+	it("still aborts via timeout even when a caller signal is supplied and never fires", async () => {
+		// Caller passes its own controller (like the poll loop) that never aborts.
+		// The request must STILL abort on the timeout, not hang forever.
+		const controller = new AbortController();
+		const signal = buildRequestSignal(controller.signal, 10);
+		expect(signal.aborted).toBe(false);
+		await new Promise((r) => setTimeout(r, 40));
+		expect(signal.aborted).toBe(true);
+	});
+
+	it("aborts when the caller signal fires (timeout not yet elapsed)", () => {
+		const controller = new AbortController();
+		const signal = buildRequestSignal(controller.signal, 60_000);
+		expect(signal.aborted).toBe(false);
+		controller.abort();
+		expect(signal.aborted).toBe(true);
+	});
+
+	it("applies a timeout even when no caller signal is passed", async () => {
+		const signal = buildRequestSignal(undefined, 10);
+		expect(signal.aborted).toBe(false);
+		await new Promise((r) => setTimeout(r, 40));
+		expect(signal.aborted).toBe(true);
 	});
 });
 
