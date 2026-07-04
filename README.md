@@ -50,7 +50,8 @@ $ pnpm dev
 - 🧬 Heal history page with GitHub PR links
 - 🎬 Interactive demo walkthrough
 - 🛡️ Zod v4 validation on all API responses
-- ⚡ React Server Components for data fetching
+- ⚡ React Server Components for data fetching (fully dynamic per request via `connection()`)
+- 🔐 Admin-gated mutations — create/edit/delete source and scrape triggers require a shared-secret session (fail-closed); read-only browsing is open
 - 🧪 Vitest + Testing Library with MSW 2 API mocks
 - 📱 Responsive terminal layout
 
@@ -193,6 +194,7 @@ pnpm dev
 | Var | Purpose |
 |---|---|
 | `NEXT_PUBLIC_API_URL` | magpie-backend viewer API URL |
+| `MAGPIE_ADMIN_SECRET` | Server-only admin secret gating all mutations + the `/login` password. Unset ⇒ mutations disabled (read-only). Never prefix with `NEXT_PUBLIC`. |
 
 ### 📜 Scripts
 
@@ -216,8 +218,9 @@ pnpm test -- --coverage      # coverage report
 
 | Metric | Value |
 |---|---|
-| **Unit tests** | 149 tests |
-| **Line coverage** | **89%** |
+| **Tests** | 211 tests (unit + route-level) |
+| **Line coverage** | **90%** |
+| **Coverage scope** | Includes `app/**/page.tsx` composition logic and the error/not-found boundaries — route-level tests invoke each page against a mocked data layer (async RSCs can't be rendered in jsdom) and assert `notFound()`, `generateMetadata`, and pagination-offset behavior |
 | **Framework** | Vitest + Testing Library + MSW 2 |
 | **API mocking** | MSW 2 request handlers — no real backend in tests |
 | **Validation** | Zod schemas validated in test assertions |
@@ -242,9 +245,12 @@ pnpm test -- --coverage      # coverage report
 
 Hosted on **Vercel**. Push to `main` → Vercel build → preview URL → promote to prod.
 
-Required env var at build time:
+Required env vars:
 
-- `NEXT_PUBLIC_API_URL`
+- `NEXT_PUBLIC_API_URL` (build time) — backend API URL.
+- `MAGPIE_ADMIN_SECRET` (runtime, server-only) — set this in the Vercel project's
+  Environment Variables (Production/Preview) to enable admin mutations. Leave it
+  unset to ship a read-only dashboard.
 
 ---
 

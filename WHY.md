@@ -10,4 +10,6 @@ The magpie backend already collects data and heals broken scrapers, but without 
 
 ## What I'd change if I did it again
 
-The dashboard currently polls for run status on an interval, which means there's always a window where a run has finished but the UI still shows "in progress." I'd add a WebSocket channel so run status updates land the moment they happen. I'd also build a config editor with inline YAML validation — right now, editing a scraper config means opening a text file or a GitHub PR, which is friction that discourages non-engineers from tuning sources. A validated editor in the dashboard would close that loop entirely.
+The dashboard currently polls for run status on an interval (with exponential backoff and a wall-clock cap), which means there's always a small window where a run has finished but the UI still shows "in progress." I'd add a WebSocket or SSE channel so run status updates land the moment they happen, instead of on the next poll tick.
+
+The dual-mode config editor — form builder plus raw-YAML textarea, both hitting the same Pydantic-validated endpoint — already shipped (see `src/components/editor/`), so editing an api-origin scraper no longer means opening a text file or a GitHub PR. The next gap there is authorization: mutations are currently gated by a single shared admin secret. If I did it again I'd wire real per-user auth (OAuth/SSO) with an audit log of who changed which source, so a team could safely share the dashboard rather than passing one password around.

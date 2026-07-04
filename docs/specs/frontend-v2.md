@@ -53,7 +53,11 @@ content-addressed dedup).
 - `DELETE /api/sources/{name}` with confirmation; redirects to `/`.
 - Error handling: 409 → "already exists" / "immutable"; 422 → Pydantic error list
   parsed and shown inline per field; SSRF URL → dedicated explanation.
-- After any mutation, `revalidateTag("sources")` + `revalidateTag("source:{name}")`.
+- Mutations are **admin-only**: each Server Action calls `requireAdmin` (shared-secret
+  session, fail-closed) before touching the backend.
+- After any mutation, invalidate the affected routes with `revalidatePath("/")`,
+  `revalidatePath("/heals")`, and `revalidatePath("/sources/{name}")`.
+  (Route-path invalidation, not tag-based — see the "shipped model" note under P3.)
 
 **Test cases**
 - Form builder submits valid config → 201.
@@ -74,17 +78,25 @@ content-addressed dedup).
 **Behavior**
 - Enable `cacheComponents: true` in `next.config.ts`.
 - Remove all `export const dynamic = "force-dynamic"`.
-- Data accessors use `'use cache'` + `cacheTag('sources')` / `cacheTag('runs', 'runs:{source}')`
-  / `cacheTag('heals', 'heals:{source}')`.
-- `cacheLife("minutes")` for dashboards; mutations call `revalidateTag`.
 - `app/error.tsx`, `app/not-found.tsx`, `app/loading.tsx` added.
-- `generateMetadata` on `/sources/[name]` and `/sources/[name]/edit`.
-- Parallel fetches: `Promise.all` in `/sources/[name]`.
+- `generateMetadata` on `/sources/[name]`, `/sources/[name]/edit`, `/sources/[name]/items`,
+  and `/runs/[id]`.
+- Parallel fetches: `Promise.all` in `/sources/[name]`, `/sources/[name]/items`, and `/demo`.
+
+> **Shipped caching model (revised).** The original plan called for `'use cache'` +
+> `cacheTag`/`cacheLife` with tag-based `revalidateTag` invalidation. That is **not** what
+> shipped, and the app does not pretend otherwise. A scraper dashboard must reflect the
+> live run/heal state, so every accessor in `src/lib/data.ts` calls `connection()` to force
+> per-request dynamic rendering (with `cacheComponents: true` these dynamic reads are
+> explicit), and mutations invalidate via `revalidatePath`, not `revalidateTag`. Adopt the
+> tag-based cache only if a future page can tolerate minutes-stale data.
 
 **Test cases**
-- Error boundary catches synthetic throw.
-- `notFound()` on unknown source renders custom page.
-- `generateMetadata` returns source-specific title.
+- Error boundary catches synthetic throw *and never renders the raw error text* (see
+  `src/app/boundaries.test.tsx`).
+- `notFound()` on unknown source renders custom page (`src/app/routes.test.tsx`).
+- `generateMetadata` returns source-specific title (`src/app/routes.test.tsx`).
+- Pagination offset math (`?page=N`) drives the correct `limit`/`offset` on each route.
 
 ## Pagination + heal polish (P4)
 

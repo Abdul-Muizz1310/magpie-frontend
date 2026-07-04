@@ -31,7 +31,7 @@ flowchart TD
 
 ## Page lifecycle
 
-Each route is a Server Component that fetches data at request time (or build time for static/ISR pages), validates with Zod, and renders. No client-side loading spinners needed.
+Each route is a Server Component that fetches data **at request time** (fully dynamic), validates with Zod, and renders. Every data accessor in `src/lib/data.ts` calls `connection()` from `next/server`, which opts the render into the dynamic path so nothing is prerendered at build time — appropriate for an ops dashboard where staleness is worse than a round-trip. No client-side loading spinners needed for the first paint.
 
 ```mermaid
 sequenceDiagram
@@ -79,14 +79,15 @@ flowchart TD
 
 | Decision | Rationale |
 |---|---|
-| Server Components for data fetching | Pages fetch from the backend API at request time (or build time for static). No client-side loading spinners needed. |
+| Server Components for data fetching | Pages fetch from the backend API at request time. No client-side loading spinners needed for first paint. |
 | Zod validation at API boundary | Parse responses before they reach components. Fail fast on unexpected shapes. |
 | No state management library | Server Components don't need client state. Each page is a fresh fetch. |
 | Biome over ESLint+Prettier | Single tool, faster, fewer config files. |
 | Vitest over Jest | Native ESM support, faster, better DX with Vite ecosystem. |
 | `next/link` mock in tests | Next.js `Link` behaves differently in jsdom. Mocking to a plain `<a>` keeps tests deterministic. |
 | Terminal aesthetic (PageFrame + TerminalWindow) | Distinctive visual identity; avoids generic dashboard look. Consistent chrome across all routes. |
-| ISR for static pages | `/`, `/demo`, `/heals` are pre-rendered at build time with ISR fallback for freshness without SSR cost. |
+| Fully dynamic rendering (`connection()`) | Every route reads live from the backend per request via `connection()`; `cacheComponents: true` is enabled so these dynamic reads are explicit. Mutations invalidate affected routes with `revalidatePath`. No build-time prerender / ISR — a scraper dashboard must reflect the current run/heal state, not a cached snapshot. |
+| Auth gate on mutations | Create/update/delete-source and scrape triggers are Server Actions guarded server-side by `requireAdmin` (shared-secret session, fail-closed). A Next.js `proxy` (middleware) redirects anonymous visitors away from the editor pages. |
 
 ## Directory layout
 
@@ -130,4 +131,4 @@ Component and `lib` tests are co-located as `*.test.tsx` / `*.test.ts`.
 3. `api.ts` makes GET requests to `NEXT_PUBLIC_API_URL` backend.
 4. Response is validated with Zod. Invalid data throws at the boundary.
 5. Component renders the validated data. Errors show an alert banner.
-6. Static pages (`/`, `/demo`, `/heals`) are pre-rendered at build time with ISR fallback.
+6. All routes are fully dynamic (`connection()` in `src/lib/data.ts`); there is no build-time prerender/ISR. Mutations call `revalidatePath` on the affected routes so the next request re-renders with fresh data.
