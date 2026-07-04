@@ -14,7 +14,7 @@ export default defineConfig({
 		pool: "forks",
 		setupFiles: ["./test/setup.ts"],
 		include: ["src/**/*.test.{ts,tsx}", "test/**/*.test.{ts,tsx}"],
-		exclude: ["**/node_modules/**", "**/.next/**", "**/dist/**", "e2e/**"],
+		exclude: ["**/node_modules/**", "**/.next/**", "**/dist/**"],
 		globals: false,
 		clearMocks: true,
 		coverage: {
@@ -24,21 +24,18 @@ export default defineConfig({
 			exclude: [
 				"**/*.test.{ts,tsx}",
 				"**/*.d.ts",
-				// Next.js scaffolds — presentational, covered by build + e2e
+				// Root layout: <html>/fonts/metadata shell that jsdom can't meaningfully
+				// exercise. Everything else — including page.tsx composition logic,
+				// error/not-found/loading boundaries — is covered by route-level tests.
 				"src/app/**/layout.tsx",
-				"src/app/**/loading.tsx",
-				"src/app/**/error.tsx",
-				"src/app/**/not-found.tsx",
-				// Page-level Server Components — async RSCs aren't unit-testable;
-				// we cover their pieces (components + data layer + actions) instead.
-				"src/app/**/page.tsx",
-				// Presentational layout chrome — covered through visual tests of
-				// composed pages, not worth per-component unit assertions
+				// Presentational nav/status chrome — pure composition, exercised
+				// incidentally when route-level tests render PageFrame.
 				"src/components/terminal/AppNav.tsx",
 				"src/components/terminal/PageFrame.tsx",
 				"src/components/terminal/StatusBar.tsx",
-				// Barrel / re-export only
-				"src/lib/utils.ts",
+				// The Next.js proxy (middleware) runs only in the Next runtime; its
+				// core logic (verifySessionToken) is covered via lib/auth.test.ts.
+				"src/proxy.ts",
 			],
 			thresholds: {
 				lines: 80,
