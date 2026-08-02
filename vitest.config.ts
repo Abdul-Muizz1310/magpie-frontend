@@ -12,6 +12,11 @@ export default defineConfig({
 	test: {
 		environment: "jsdom",
 		pool: "forks",
+		// Default 5000ms is too tight for tests that drive several real-timer
+		// `user.type()` sequences (e.g. SourceEditor.test.tsx filling multiple
+		// form fields) on a cold/loaded machine -- observed as a non-deterministic
+		// timeout with no code defect.
+		testTimeout: 15_000,
 		setupFiles: ["./test/setup.ts"],
 		include: ["src/**/*.test.{ts,tsx}", "test/**/*.test.{ts,tsx}"],
 		exclude: ["**/node_modules/**", "**/.next/**", "**/dist/**"],

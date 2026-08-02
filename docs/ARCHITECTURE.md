@@ -8,7 +8,7 @@ flowchart LR
     Vercel --> NextApp["Next.js App Router<br/>(Server Components)"]
     NextApp --> API["magpie-backend<br/>FastAPI on Render"]
     API --> Neon[("Neon Postgres")]
-    API --> R2["Cloudflare R2<br/>(HTML snapshots)"]
+    API --> R2["Cloudflare R2<br/>(HTML snapshots -- planned, optional)"]
 ```
 
 ## App structure

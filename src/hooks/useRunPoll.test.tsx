@@ -62,7 +62,17 @@ describe("useRunPoll", () => {
 		);
 		const { result } = renderHook(() => useRunPoll(UUID_A));
 		await waitFor(() => expect(result.current.kind).toBe("done"), { timeout: 15_000 });
-		expect(call).toBe(2);
+		// The 503 was call 1, so reaching "done" at all proves the retry happened.
+		// Do NOT assert an exact count here: `waitFor` observes the state change on its
+		// own polling interval, so on a loaded machine the hook can issue another poll
+		// before the assertion runs. Asserting `toBe(2)` made this test flaky.
+		expect(call).toBeGreaterThanOrEqual(2);
+
+		// Instead, assert the property the exact count was standing in for: once the run
+		// is terminal, polling actually stops. Same idiom as the REL-2 stall test below.
+		const callsAtDone = call;
+		await new Promise((r) => setTimeout(r, 1_200));
+		expect(call).toBe(callsAtDone);
 	}, 20_000);
 
 	it("surfaces non-retryable client errors as error state", async () => {

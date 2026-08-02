@@ -66,7 +66,7 @@ flowchart TD
     Next --> RSC["React Server Components<br/>data fetching"]
     RSC --> API["magpie-backend<br/>FastAPI on Render"]
     API --> DB[("Neon Postgres")]
-    API --> R2["Cloudflare R2<br/>HTML snapshots"]
+    API --> R2["Cloudflare R2<br/>HTML snapshots (planned, optional)"]
     Next --> Client["Client Components<br/>interactivity"]
 ```
 
@@ -218,8 +218,8 @@ pnpm test -- --coverage      # coverage report
 
 | Metric | Value |
 |---|---|
-| **Tests** | 211 tests (unit + route-level) |
-| **Line coverage** | **90%** |
+| **Tests** | 218 tests (unit + route-level) |
+| **Line coverage** | **92%** |
 | **Coverage scope** | Includes `app/**/page.tsx` composition logic and the error/not-found boundaries — route-level tests invoke each page against a mocked data layer (async RSCs can't be rendered in jsdom) and assert `notFound()`, `generateMetadata`, and pagination-offset behavior |
 | **Framework** | Vitest + Testing Library + MSW 2 |
 | **API mocking** | MSW 2 request handlers — no real backend in tests |
