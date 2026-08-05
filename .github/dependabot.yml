@@ -8,3 +8,16 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # react and react-dom are both pinned to one exact version and must be
+    # raised together. Ungrouped, dependabot opens a PR per package and lifts
+    # only one, and react-dom reaches into react internals that are guaranteed
+    # to match only within an exact version — so the skew breaks every component
+    # suite without naming the cause. Exact names, not prefixes, so "react"
+    # cannot sweep in react-is.
+    groups:
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
