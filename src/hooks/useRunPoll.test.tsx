@@ -1,14 +1,14 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { HttpResponse, http } from "msw";
 import { describe, expect, it } from "vitest";
-import { API_URL, makeRun, UUID_A } from "../../test/msw/fixtures";
+import { makeRun, PROXY_PATH, UUID_A } from "../../test/msw/fixtures";
 import { server } from "../../test/msw/server";
 import { useRunPoll } from "./useRunPoll";
 
 describe("useRunPoll", () => {
 	it("reaches 'done' when backend returns status=ok", async () => {
 		server.use(
-			http.get(`${API_URL}/api/runs/${UUID_A}`, () =>
+			http.get(`${PROXY_PATH}/api/runs/${UUID_A}`, () =>
 				HttpResponse.json(makeRun({ status: "ok", items_new: 5, duration_ms: 60_000 })),
 			),
 		);
@@ -27,7 +27,7 @@ describe("useRunPoll", () => {
 
 	it("surfaces 404 as error state", async () => {
 		server.use(
-			http.get(`${API_URL}/api/runs/${UUID_A}`, () =>
+			http.get(`${PROXY_PATH}/api/runs/${UUID_A}`, () =>
 				HttpResponse.json({ detail: "not found" }, { status: 404 }),
 			),
 		);
@@ -39,7 +39,7 @@ describe("useRunPoll", () => {
 	it("transitions through queued → running → ok", async () => {
 		let call = 0;
 		server.use(
-			http.get(`${API_URL}/api/runs/${UUID_A}`, () => {
+			http.get(`${PROXY_PATH}/api/runs/${UUID_A}`, () => {
 				call += 1;
 				if (call === 1) return HttpResponse.json(makeRun({ status: "queued", ended_at: null }));
 				if (call === 2) return HttpResponse.json(makeRun({ status: "running", ended_at: null }));
@@ -54,7 +54,7 @@ describe("useRunPoll", () => {
 	it("retries transient 5xx then succeeds", async () => {
 		let call = 0;
 		server.use(
-			http.get(`${API_URL}/api/runs/${UUID_A}`, () => {
+			http.get(`${PROXY_PATH}/api/runs/${UUID_A}`, () => {
 				call += 1;
 				if (call === 1) return HttpResponse.json({ detail: "temporary" }, { status: 503 });
 				return HttpResponse.json(makeRun({ status: "ok" }));
@@ -77,7 +77,7 @@ describe("useRunPoll", () => {
 
 	it("surfaces non-retryable client errors as error state", async () => {
 		server.use(
-			http.get(`${API_URL}/api/runs/${UUID_A}`, () =>
+			http.get(`${PROXY_PATH}/api/runs/${UUID_A}`, () =>
 				HttpResponse.json({ detail: "bad request" }, { status: 400 }),
 			),
 		);
@@ -88,7 +88,7 @@ describe("useRunPoll", () => {
 	it("stops polling and surfaces a 'stalled' state for a wedged non-terminal run (REL-2)", async () => {
 		let call = 0;
 		server.use(
-			http.get(`${API_URL}/api/runs/${UUID_A}`, () => {
+			http.get(`${PROXY_PATH}/api/runs/${UUID_A}`, () => {
 				call += 1;
 				// Never reaches a terminal status — simulates a stuck/queued run.
 				return HttpResponse.json(makeRun({ status: "queued", ended_at: null }));

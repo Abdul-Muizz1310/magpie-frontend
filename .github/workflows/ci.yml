@@ -36,3 +36,6 @@ jobs:
         with: { node-version: 24, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
+      # The signing key and signer are server-only (spec 07); no client bundle may carry them.
+      - name: client bundles carry no signing code
+        run: "! grep -rlE 'MAGPIE_FRONTEND_SIGNING_KEY_PRIVATE|createPrivateKey' .next/static"

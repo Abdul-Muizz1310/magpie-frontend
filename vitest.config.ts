@@ -7,6 +7,8 @@ export default defineConfig({
 	resolve: {
 		alias: {
 			"@": resolve(__dirname, "./src"),
+			// Next resolves `server-only` itself; tests run server code, so they get its empty module.
+			"server-only": resolve(__dirname, "./test/stubs/server-only.ts"),
 		},
 	},
 	test: {

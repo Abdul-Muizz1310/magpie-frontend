@@ -1,14 +1,5 @@
 import { connection } from "next/server";
-import {
-	fetchHeals as apiFetchHeals,
-	fetchHealth as apiFetchHealth,
-	fetchRuns as apiFetchRuns,
-	fetchSource as apiFetchSource,
-	fetchSourceItems as apiFetchSourceItems,
-	fetchSources as apiFetchSources,
-	getSourceDetail as apiGetSourceDetail,
-	listSourcesCrud as apiListSourcesCrud,
-} from "./api";
+import { serverApi } from "./api-server";
 import type {
 	Heal,
 	Health,
@@ -22,26 +13,27 @@ import type {
 // All backend-facing reads are request-time dynamic. `connection()` tells
 // Cache Components the data must be fetched per request (no build-time
 // prerender). Mutations in `actions.ts` call `revalidatePath` on the affected
-// routes so subsequent requests re-render with fresh data.
+// routes so subsequent requests re-render with fresh data. Every call goes through `serverApi`:
+// straight to the backend with a fresh platform token (spec 07).
 
 export async function getSources(): Promise<SourceSummary[]> {
 	await connection();
-	return apiFetchSources();
+	return serverApi.fetchSources();
 }
 
 export async function getSource(name: string): Promise<SourceSummary> {
 	await connection();
-	return apiFetchSource(name);
+	return serverApi.fetchSource(name);
 }
 
 export async function getSourceConfig(name: string): Promise<SourceDetail> {
 	await connection();
-	return apiGetSourceDetail(name);
+	return serverApi.getSourceDetail(name);
 }
 
 export async function listCrudSources(origin?: "file" | "api"): Promise<SourceCrudSummary[]> {
 	await connection();
-	return apiListSourcesCrud(origin);
+	return serverApi.listSourcesCrud(origin);
 }
 
 export async function getRuns(params: {
@@ -50,7 +42,7 @@ export async function getRuns(params: {
 	offset?: number;
 }): Promise<Run[]> {
 	await connection();
-	return apiFetchRuns(params);
+	return serverApi.fetchRuns(params);
 }
 
 export async function getHeals(params: {
@@ -59,12 +51,12 @@ export async function getHeals(params: {
 	offset?: number;
 }): Promise<Heal[]> {
 	await connection();
-	return apiFetchHeals(params);
+	return serverApi.fetchHeals(params);
 }
 
 export async function getHealth(): Promise<Health> {
 	await connection();
-	return apiFetchHealth();
+	return serverApi.fetchHealth();
 }
 
 export async function getSourceItems(
@@ -72,5 +64,5 @@ export async function getSourceItems(
 	params: { limit?: number; offset?: number } = {},
 ): Promise<RunItem[]> {
 	await connection();
-	return apiFetchSourceItems(name, params);
+	return serverApi.fetchSourceItems(name, params);
 }

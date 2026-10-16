@@ -8,7 +8,7 @@ import { statusDot } from "@/components/shared/StatusBadge";
 import { Prompt } from "@/components/terminal/Prompt";
 import { TerminalWindow } from "@/components/terminal/TerminalWindow";
 import { useRunPoll } from "@/hooks/useRunPoll";
-import { fetchRunItems } from "@/lib/api";
+import { browserApi } from "@/lib/api-browser";
 import type { Run, RunItem } from "@/lib/schemas";
 import { ScrapedItemsList } from "./ScrapedItemsList";
 
@@ -41,7 +41,8 @@ function ItemsSection({ runId }: { runId: string }) {
 	useEffect(() => {
 		let cancelled = false;
 		setState({ kind: "loading" });
-		fetchRunItems(runId, { limit: 100 })
+		browserApi
+			.fetchRunItems(runId, { limit: 100 })
 			.then((items) => {
 				if (!cancelled) setState({ kind: "done", items });
 			})

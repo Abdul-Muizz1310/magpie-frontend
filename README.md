@@ -195,6 +195,7 @@ pnpm dev
 |---|---|
 | `NEXT_PUBLIC_API_URL` | magpie-backend viewer API URL |
 | `MAGPIE_ADMIN_SECRET` | Server-only admin secret gating all mutations + the `/login` password. Unset ⇒ mutations disabled (read-only). Never prefix with `NEXT_PUBLIC`. |
+| `MAGPIE_FRONTEND_SIGNING_KEY_PRIVATE` | Server-only Ed25519 private key (PKCS#8 DER, base64) that signs the 60-second platform token magpie-backend requires on every data call. Its public half is the backend's `MAGPIE_FRONTEND_SIGNING_KEY_PUBLIC`. Never prefix with `NEXT_PUBLIC`. |
 
 ### 📜 Scripts
 
@@ -251,6 +252,10 @@ Required env vars:
 - `MAGPIE_ADMIN_SECRET` (runtime, server-only) — set this in the Vercel project's
   Environment Variables (Production/Preview) to enable admin mutations. Leave it
   unset to ship a read-only dashboard.
+- `MAGPIE_FRONTEND_SIGNING_KEY_PRIVATE` (runtime, server-only) — signs the platform
+  token. Server code sends it to the backend directly; browser code calls the same-origin
+  `/api/backend/...` proxy, which signs and forwards (see `docs/specs/07-platform-token-proxy.md`).
+  Without it the proxy answers 503 and server-side reads fail.
 
 ---
 

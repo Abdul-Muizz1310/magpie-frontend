@@ -15,9 +15,12 @@ import {
 	UUID_A,
 } from "../../test/msw/fixtures";
 import { server } from "../../test/msw/server";
-import {
-	ApiError,
-	buildRequestSignal,
+import { ApiError, buildRequestSignal } from "./api";
+import { serverApi } from "./api-server";
+
+// The typed client's behaviour (spec 00), exercised through the server transport, which calls
+// the backend directly with a platform token (spec 07; test/setup.ts installs a throwaway key).
+const {
 	createSource,
 	deleteSource,
 	enqueueScrape,
@@ -33,7 +36,7 @@ import {
 	listSourcesCrud,
 	scrapeOnce,
 	updateSource,
-} from "./api";
+} = serverApi;
 
 describe("fetchSources (viewer)", () => {
 	it("returns SourceSummary[] on 200", async () => {

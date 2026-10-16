@@ -21,13 +21,22 @@ flowchart TD
     Layout --> Heals["/heals -- Heal History"]
     Layout --> Demo["/demo -- Demo Page"]
 
-    Home --> ApiClient["src/lib/api.ts<br/>(Zod-validated client)"]
-    Detail --> ApiClient
-    Heals --> ApiClient
-    Demo --> ApiClient
+    Home --> ServerApi["src/lib/api-server.ts<br/>(Zod-validated client, signed)"]
+    Detail --> ServerApi
+    Heals --> ServerApi
+    Demo --> ServerApi
 
-    ApiClient --> Backend["magpie-backend API<br/>GET /sources, /runs,<br/>/heals, /health"]
+    ServerApi -->|X-Platform-Token| Backend["magpie-backend API<br/>GET /sources, /runs,<br/>/heals, /health"]
+    Client["Client components<br/>(useRunPoll, LiveRunView, BackendStatusDot)"] --> BrowserApi["src/lib/api-browser.ts"]
+    BrowserApi --> Proxy["/api/backend/[...path]<br/>(signs and forwards)"]
+    Proxy -->|X-Platform-Token| Backend
 ```
+
+magpie-backend requires a platform token on every data route. Server code mints a fresh
+60-second token per call with `MAGPIE_FRONTEND_SIGNING_KEY_PRIVATE` and calls the backend
+directly; browser code calls the same-origin proxy route, which signs and forwards. The key and the
+signer are `server-only` and never reach a client bundle. See
+[`specs/07-platform-token-proxy.md`](specs/07-platform-token-proxy.md).
 
 ## Page lifecycle
 
@@ -103,7 +112,8 @@ src/
 │   │       (+ edit/, items/ subroutes)
 │   ├── runs/[id]/page.tsx      # Live run view
 │   ├── heals/page.tsx          # Heal history with config diffs
-│   └── demo/page.tsx           # Interactive demo walkthrough
+│   ├── demo/page.tsx           # Interactive demo walkthrough
+│   └── api/backend/[...path]/route.ts  # Signing proxy for browser calls
 ├── components/
 │   ├── terminal/               # Chrome: PageFrame, TerminalWindow, AppNav, StatusBar, Prompt
 │   ├── sources/                # SourceCard, OriginBadge, DeleteSourceButton
@@ -114,7 +124,11 @@ src/
 ├── hooks/
 │   └── useRunPoll.ts           # Live run-status polling
 └── lib/
-    ├── api.ts                  # Backend fetch wrapper
+    ├── api.ts                  # Typed backend client, bound to a transport
+    ├── api-server.ts           # Server transport: direct + signed (server-only)
+    ├── api-browser.ts          # Browser transport: the /api/backend proxy
+    ├── platform-token.ts       # Ed25519 platform-token minting (server-only)
+    ├── backend-proxy.ts        # The proxy route's logic (server-only)
     ├── data.ts                 # Server-side data fetching
     ├── actions.ts              # Server actions (create / edit / delete / trigger)
     ├── schemas.ts              # Zod schemas (API boundary validation)
@@ -128,7 +142,8 @@ Component and `lib` tests are co-located as `*.test.tsx` / `*.test.ts`.
 
 1. User hits a route (e.g., `/sources/hackernews`).
 2. Next.js Server Component calls `fetchSource("hackernews")` + `fetchRuns({ source: "hackernews" })`.
-3. `api.ts` makes GET requests to `NEXT_PUBLIC_API_URL` backend.
+3. `api-server.ts` makes GET requests to the `NEXT_PUBLIC_API_URL` backend, each with a fresh
+   platform token.
 4. Response is validated with Zod. Invalid data throws at the boundary.
 5. Component renders the validated data. Errors show an alert banner.
 6. All routes are fully dynamic (`connection()` in `src/lib/data.ts`); there is no build-time prerender/ISR. Mutations call `revalidatePath` on the affected routes so the next request re-renders with fresh data.

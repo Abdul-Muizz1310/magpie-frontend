@@ -22,7 +22,10 @@ read raw in two places (`getBaseUrl()` and `BackendStatusDot`).
 - `getBaseUrl()`: `envValue(NEXT_PUBLIC_API_URL)`, or `http://localhost:8000` when unset. The value
   must parse as an `http:` or `https:` URL, else it throws `ConfigError` naming
   `NEXT_PUBLIC_API_URL`. Trailing slashes are dropped so `${base}${path}` joins cleanly.
-  `src/lib/api.ts` re-exports it; `BackendStatusDot` calls it instead of reading the variable.
+  Since spec 07 only server code calls it: `api-server.ts` and the `/api/backend` proxy route.
+  The browser, `BackendStatusDot` included, calls the proxy and never reads the variable.
+- `MAGPIE_FRONTEND_SIGNING_KEY_PRIVATE` (`src/lib/platform-token.ts`, spec 07) goes through
+  `envValue()` too, then must decode as an Ed25519 PKCS#8 key.
 - `getAdminSecret()` (`src/lib/auth.ts`): `envValue(MAGPIE_ADMIN_SECRET)`. A blank secret is still
   unset, so admin stays closed.
 
@@ -35,5 +38,5 @@ read raw in two places (`getBaseUrl()` and `BackendStatusDot`).
    `ftp://…` and `https://` throw `ConfigError` naming the variable.
 3. `getAdminSecret`: a BOM + CRLF wrapped secret is trimmed, so the typed secret matches; a
    whitespace-only secret is `null` (fail closed).
-4. Composed: with the production-shaped value, `fetchHealth()` reaches the backend and
-   `BackendStatusDot` reports ok.
+4. Composed: with the production-shaped value, the `/api/backend` proxy route reaches the
+   backend (spec 07; it was `BackendStatusDot`'s direct poll before the proxy).

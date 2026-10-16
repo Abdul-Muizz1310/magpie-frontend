@@ -2,7 +2,7 @@
 import { render, screen } from "@testing-library/react";
 import { HttpResponse, http } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { API_URL } from "../../test/msw/fixtures";
+import { PROXY_PATH } from "../../test/msw/fixtures";
 import { server } from "../../test/msw/server";
 import GlobalError from "./error";
 import Loading from "./loading";
@@ -11,7 +11,7 @@ import NotFound from "./not-found";
 // PageFrame chrome mounts BackendStatusDot, which polls /health on render.
 beforeEach(() => {
 	server.use(
-		http.get(`${API_URL}/health`, () =>
+		http.get(`${PROXY_PATH}/health`, () =>
 			HttpResponse.json({ status: "ok", service: "magpie", db: "ok" }),
 		),
 	);

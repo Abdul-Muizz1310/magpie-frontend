@@ -12,6 +12,8 @@ import type {
 } from "@/lib/schemas";
 
 export const API_URL = "http://localhost:9999";
+/** Where browser-side code calls the backend: the same-origin proxy route (spec 07). */
+export const PROXY_PATH = "/api/backend";
 
 export const UUID_A = "11111111-1111-4111-8111-111111111111";
 export const UUID_B = "22222222-2222-4222-8222-222222222222";

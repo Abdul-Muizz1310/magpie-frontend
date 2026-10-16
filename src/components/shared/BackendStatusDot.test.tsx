@@ -1,7 +1,7 @@
 import { screen, waitFor } from "@testing-library/react";
 import { HttpResponse, http } from "msw";
 import { describe, expect, it, vi } from "vitest";
-import { API_URL } from "../../../test/msw/fixtures";
+import { PROXY_PATH } from "../../../test/msw/fixtures";
 import { server } from "../../../test/msw/server";
 import { renderUI } from "../../../test/utils/render";
 import { BackendStatusDot } from "./BackendStatusDot";
@@ -9,7 +9,7 @@ import { BackendStatusDot } from "./BackendStatusDot";
 describe("BackendStatusDot", () => {
 	it("renders ok state when health returns db=ok", async () => {
 		server.use(
-			http.get(`${API_URL}/health`, () =>
+			http.get(`${PROXY_PATH}/health`, () =>
 				HttpResponse.json({ status: "ok", service: "magpie", db: "ok" }),
 			),
 		);
@@ -18,36 +18,45 @@ describe("BackendStatusDot", () => {
 		await waitFor(() => expect(dot.getAttribute("title")).toMatch(/ok/));
 	});
 
-	it("polls the cleaned URL when the env value carries a BOM and CRLF (T-ENV-4)", async () => {
-		vi.stubEnv("NEXT_PUBLIC_API_URL", `\ufeff${API_URL}\r\n`);
+	it("polls /health through the same-origin proxy, not the backend (T-PTP-18)", async () => {
+		let url = "";
 		server.use(
-			http.get(`${API_URL}/health`, () =>
-				HttpResponse.json({ status: "ok", service: "magpie", db: "ok" }),
-			),
+			http.get(`${PROXY_PATH}/health`, ({ request }) => {
+				url = request.url;
+				return HttpResponse.json({ status: "ok", service: "magpie", db: "ok" });
+			}),
 		);
-		try {
-			renderUI(<BackendStatusDot />);
-			const dot = screen.getByTestId("backend-status-dot");
-			await waitFor(() => expect(dot.getAttribute("title")).toMatch(/ok/));
-		} finally {
-			vi.unstubAllEnvs();
-		}
+		renderUI(<BackendStatusDot />);
+		const dot = screen.getByTestId("backend-status-dot");
+		await waitFor(() => expect(dot.getAttribute("title")).toMatch(/ok/));
+		expect(url).toBe(`${window.location.origin}/api/backend/health`);
 	});
 
-	it("shows the backend as down, without fetching, when the URL is unusable (T-ENV-4)", async () => {
-		vi.stubEnv("NEXT_PUBLIC_API_URL", "not a url");
-		try {
-			renderUI(<BackendStatusDot />);
-			const dot = screen.getByTestId("backend-status-dot");
-			await waitFor(() => expect(dot.getAttribute("title")).toMatch(/unreachable/));
-		} finally {
-			vi.unstubAllEnvs();
-		}
+	it("shows the backend as down when the proxy cannot reach it (502, T-PTP-18)", async () => {
+		server.use(
+			http.get(`${PROXY_PATH}/health`, () =>
+				HttpResponse.json({ error: "backend unreachable" }, { status: 502 }),
+			),
+		);
+		renderUI(<BackendStatusDot />);
+		const dot = screen.getByTestId("backend-status-dot");
+		await waitFor(() => expect(dot.getAttribute("title")).toMatch(/unreachable/));
+	});
+
+	it("shows degraded when the proxy is not configured (503, T-PTP-18)", async () => {
+		server.use(
+			http.get(`${PROXY_PATH}/health`, () =>
+				HttpResponse.json({ error: "proxy not configured" }, { status: 503 }),
+			),
+		);
+		renderUI(<BackendStatusDot />);
+		const dot = screen.getByTestId("backend-status-dot");
+		await waitFor(() => expect(dot.getAttribute("title")).toMatch(/degraded/));
 	});
 
 	it("renders degraded state when db is not ok", async () => {
 		server.use(
-			http.get(`${API_URL}/health`, () =>
+			http.get(`${PROXY_PATH}/health`, () =>
 				HttpResponse.json({ status: "degraded", service: "magpie", db: "down" }),
 			),
 		);
@@ -57,7 +66,7 @@ describe("BackendStatusDot", () => {
 	});
 
 	it("renders down state when the endpoint is unreachable", async () => {
-		server.use(http.get(`${API_URL}/health`, () => HttpResponse.error()));
+		server.use(http.get(`${PROXY_PATH}/health`, () => HttpResponse.error()));
 		renderUI(<BackendStatusDot />);
 		const dot = screen.getByTestId("backend-status-dot");
 		await waitFor(() => expect(dot.getAttribute("title")).toMatch(/unreachable/));
@@ -66,7 +75,7 @@ describe("BackendStatusDot", () => {
 	it("does not poll while the tab is hidden, and starts when it becomes visible (REL-3)", async () => {
 		let hits = 0;
 		server.use(
-			http.get(`${API_URL}/health`, () => {
+			http.get(`${PROXY_PATH}/health`, () => {
 				hits += 1;
 				return HttpResponse.json({ status: "ok", service: "magpie", db: "ok" });
 			}),

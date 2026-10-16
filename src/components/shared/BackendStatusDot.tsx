@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getBaseUrl } from "@/lib/env";
+import { proxyUrl } from "@/lib/api-browser";
 import { cn } from "@/lib/utils";
 
 type HealthState = "unknown" | "ok" | "degraded" | "down";
@@ -11,23 +11,24 @@ export function BackendStatusDot() {
 	const [db, setDb] = useState<string>("");
 
 	useEffect(() => {
-		let base: string;
-		try {
-			base = getBaseUrl();
-		} catch {
-			setState("down");
-			return;
-		}
+		// Through the same-origin proxy like every other browser call (spec 07): the dot then
+		// measures the path the page's data takes, proxy and signing key included.
+		const url = proxyUrl("/health");
 		let cancelled = false;
 		let interval: ReturnType<typeof setInterval> | null = null;
 
 		async function tick() {
 			try {
-				const res = await fetch(`${base}/health`, {
+				const res = await fetch(url, {
 					signal: AbortSignal.timeout(5_000),
 					cache: "no-store",
 				});
 				if (cancelled) return;
+				// 502 is the proxy saying it could not reach the backend at all.
+				if (res.status === 502) {
+					setState("down");
+					return;
+				}
 				if (!res.ok) {
 					setState("degraded");
 					return;

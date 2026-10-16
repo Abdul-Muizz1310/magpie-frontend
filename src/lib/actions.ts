@@ -1,16 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import type { EnqueueResponse, PydanticIssue } from "./api";
-import {
-	ApiError,
-	createSource as apiCreateSource,
-	deleteSource as apiDeleteSource,
-	enqueueScrape as apiEnqueueScrape,
-	scrapeOnce as apiScrapeOnce,
-	updateSource as apiUpdateSource,
-	type SourceSubmission,
-} from "./api";
+import type { EnqueueResponse, PydanticIssue, SourceSubmission } from "./api";
+import { ApiError } from "./api";
+import { serverApi } from "./api-server";
 import type { ScrapeResult, SourceDetail } from "./schemas";
 import { requireAdmin } from "./session";
 
@@ -49,7 +42,7 @@ export async function createSourceAction(
 	const auth = await requireAdmin("createSource");
 	if (!auth.ok) return auth;
 	try {
-		const data = await apiCreateSource(body);
+		const data = await serverApi.createSource(body);
 		invalidateSourceRoutes(data.name);
 		return { ok: true, data };
 	} catch (e) {
@@ -64,7 +57,7 @@ export async function updateSourceAction(
 	const auth = await requireAdmin("updateSource");
 	if (!auth.ok) return auth;
 	try {
-		const data = await apiUpdateSource(name, body);
+		const data = await serverApi.updateSource(name, body);
 		invalidateSourceRoutes(name);
 		return { ok: true, data };
 	} catch (e) {
@@ -76,7 +69,7 @@ export async function deleteSourceAction(name: string): Promise<ActionResult<nul
 	const auth = await requireAdmin("deleteSource");
 	if (!auth.ok) return auth;
 	try {
-		await apiDeleteSource(name);
+		await serverApi.deleteSource(name);
 		invalidateSourceRoutes(name);
 		return { ok: true, data: null };
 	} catch (e) {
@@ -93,7 +86,7 @@ export async function enqueueScrapeAction(
 	const auth = await requireAdmin("enqueueScrape");
 	if (!auth.ok) return auth;
 	try {
-		const data = await apiEnqueueScrape(source, maxItems);
+		const data = await serverApi.enqueueScrape(source, maxItems);
 		invalidateSourceRoutes(source);
 		return { ok: true, data };
 	} catch (e) {
@@ -108,7 +101,7 @@ export async function scrapeOnceAction(
 	const auth = await requireAdmin("scrapeOnce");
 	if (!auth.ok) return auth;
 	try {
-		const data = await apiScrapeOnce(source, maxItems);
+		const data = await serverApi.scrapeOnce(source, maxItems);
 		invalidateSourceRoutes(source);
 		return { ok: true, data };
 	} catch (e) {

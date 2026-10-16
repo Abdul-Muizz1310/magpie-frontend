@@ -15,38 +15,41 @@ import {
 // needs the full happy-path surface (e.g. a component that renders a view
 // making several unrelated requests). Individual tests typically only need one
 // or two of these, which they can cherry-pick or override.
-export const happyHandlers = () => [
-	http.get(`${API_URL}/sources`, () => HttpResponse.json([makeSourceSummary()])),
-	http.get(`${API_URL}/sources/:name`, ({ params }) =>
+//
+// `base` is where the code under test calls: the backend (`API_URL`) for server-side code, the
+// same-origin proxy (`PROXY_PATH`) for browser-side code (spec 07).
+export const happyHandlers = (base: string = API_URL) => [
+	http.get(`${base}/sources`, () => HttpResponse.json([makeSourceSummary()])),
+	http.get(`${base}/sources/:name`, ({ params }) =>
 		HttpResponse.json(makeSourceSummary({ name: String(params.name) })),
 	),
-	http.get(`${API_URL}/runs`, () => HttpResponse.json([makeRun()])),
-	http.get(`${API_URL}/heals`, () => HttpResponse.json([makeHeal()])),
-	http.get(`${API_URL}/health`, () => HttpResponse.json(makeHealth())),
-	http.post(`${API_URL}/api/scrape/:source/once`, ({ params }) =>
+	http.get(`${base}/runs`, () => HttpResponse.json([makeRun()])),
+	http.get(`${base}/heals`, () => HttpResponse.json([makeHeal()])),
+	http.get(`${base}/health`, () => HttpResponse.json(makeHealth())),
+	http.post(`${base}/api/scrape/:source/once`, ({ params }) =>
 		HttpResponse.json(makeScrapeResult({ source: String(params.source) })),
 	),
-	http.post(`${API_URL}/api/scrape/:source/enqueue`, ({ params }) =>
+	http.post(`${base}/api/scrape/:source/enqueue`, ({ params }) =>
 		HttpResponse.json(
 			makeEnqueueResponse({ source: String(params.source) }),
 			{ status: 202 },
 		),
 	),
-	http.post(`${API_URL}/api/scrape/batch`, () =>
+	http.post(`${base}/api/scrape/batch`, () =>
 		HttpResponse.json({ runs: [makeScrapeResult()], failed: [] }),
 	),
-	http.get(`${API_URL}/api/runs/:id`, ({ params }) =>
+	http.get(`${base}/api/runs/:id`, ({ params }) =>
 		HttpResponse.json(makeRun({ id: String(params.id) })),
 	),
-	http.get(`${API_URL}/api/sources`, () => HttpResponse.json([makeSourceCrudSummary()])),
-	http.get(`${API_URL}/api/sources/:name`, ({ params }) =>
+	http.get(`${base}/api/sources`, () => HttpResponse.json([makeSourceCrudSummary()])),
+	http.get(`${base}/api/sources/:name`, ({ params }) =>
 		HttpResponse.json(makeSourceDetail({ name: String(params.name) })),
 	),
-	http.post(`${API_URL}/api/sources`, () =>
+	http.post(`${base}/api/sources`, () =>
 		HttpResponse.json(makeSourceDetail(), { status: 201 }),
 	),
-	http.patch(`${API_URL}/api/sources/:name`, ({ params }) =>
+	http.patch(`${base}/api/sources/:name`, ({ params }) =>
 		HttpResponse.json(makeSourceDetail({ name: String(params.name) })),
 	),
-	http.delete(`${API_URL}/api/sources/:name`, () => new HttpResponse(null, { status: 204 })),
+	http.delete(`${base}/api/sources/:name`, () => new HttpResponse(null, { status: 204 })),
 ];

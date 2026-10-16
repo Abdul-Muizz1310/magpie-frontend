@@ -1,7 +1,7 @@
 import { screen, waitFor } from "@testing-library/react";
 import { HttpResponse, http } from "msw";
 import { describe, expect, it } from "vitest";
-import { API_URL, makeRun, makeRunItem, UUID_A } from "../../../test/msw/fixtures";
+import { makeRun, makeRunItem, PROXY_PATH, UUID_A } from "../../../test/msw/fixtures";
 import { server } from "../../../test/msw/server";
 import { renderUI } from "../../../test/utils/render";
 import { LiveRunView } from "./LiveRunView";
@@ -14,10 +14,10 @@ describe("LiveRunView", () => {
 
 	it("transitions to done state with stats when backend returns ok", async () => {
 		server.use(
-			http.get(`${API_URL}/api/runs/${UUID_A}`, () =>
+			http.get(`${PROXY_PATH}/api/runs/${UUID_A}`, () =>
 				HttpResponse.json(makeRun({ status: "ok", items_new: 7 })),
 			),
-			http.get(`${API_URL}/api/runs/${UUID_A}/items`, () => HttpResponse.json([])),
+			http.get(`${PROXY_PATH}/api/runs/${UUID_A}/items`, () => HttpResponse.json([])),
 		);
 		renderUI(<LiveRunView runId={UUID_A} />);
 		await waitFor(() => expect(screen.getByText(/run finished/i)).toBeInTheDocument());
@@ -26,8 +26,10 @@ describe("LiveRunView", () => {
 
 	it("renders scraped items once status is ok", async () => {
 		server.use(
-			http.get(`${API_URL}/api/runs/${UUID_A}`, () => HttpResponse.json(makeRun({ status: "ok" }))),
-			http.get(`${API_URL}/api/runs/${UUID_A}/items`, () =>
+			http.get(`${PROXY_PATH}/api/runs/${UUID_A}`, () =>
+				HttpResponse.json(makeRun({ status: "ok" })),
+			),
+			http.get(`${PROXY_PATH}/api/runs/${UUID_A}/items`, () =>
 				HttpResponse.json([
 					makeRunItem({ title: "First item", url: "https://x.example/1" }),
 					makeRunItem({
@@ -50,8 +52,10 @@ describe("LiveRunView", () => {
 
 	it("shows items-load error if /items fails after ok", async () => {
 		server.use(
-			http.get(`${API_URL}/api/runs/${UUID_A}`, () => HttpResponse.json(makeRun({ status: "ok" }))),
-			http.get(`${API_URL}/api/runs/${UUID_A}/items`, () =>
+			http.get(`${PROXY_PATH}/api/runs/${UUID_A}`, () =>
+				HttpResponse.json(makeRun({ status: "ok" })),
+			),
+			http.get(`${PROXY_PATH}/api/runs/${UUID_A}/items`, () =>
 				HttpResponse.json({ detail: "broken" }, { status: 500 }),
 			),
 		);
@@ -61,7 +65,7 @@ describe("LiveRunView", () => {
 
 	it("shows error panel when backend returns 404", async () => {
 		server.use(
-			http.get(`${API_URL}/api/runs/${UUID_A}`, () =>
+			http.get(`${PROXY_PATH}/api/runs/${UUID_A}`, () =>
 				HttpResponse.json({ detail: "gone" }, { status: 404 }),
 			),
 		);
@@ -71,7 +75,7 @@ describe("LiveRunView", () => {
 
 	it("shows the scrape error when run.status is error and skips items fetch", async () => {
 		server.use(
-			http.get(`${API_URL}/api/runs/${UUID_A}`, () =>
+			http.get(`${PROXY_PATH}/api/runs/${UUID_A}`, () =>
 				HttpResponse.json(makeRun({ status: "error", error: "selector broke" })),
 			),
 		);

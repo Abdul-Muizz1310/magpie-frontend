@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ApiError, fetchRun } from "@/lib/api";
+import { ApiError } from "@/lib/api";
+import { browserApi } from "@/lib/api-browser";
 import type { Run } from "@/lib/schemas";
 
 export type PollState =
@@ -53,7 +54,7 @@ export function useRunPoll(runId: string | null, options: UseRunPollOptions = {}
 		async function tick() {
 			if (cancelled || abort.aborted) return;
 			try {
-				const run = await fetchRun(id, abort);
+				const run = await browserApi.fetchRun(id, abort);
 				transientFailures = 0;
 				if (cancelled || abort.aborted) return;
 				if (isTerminal(run.status)) {
