@@ -10,6 +10,8 @@
 // No secret configured ⇒ no valid token can ever be minted ⇒ every mutation
 // is denied. That is the intended fail-closed posture for an unconfigured deploy.
 
+import { envValue } from "./env";
+
 export const COOKIE_NAME = "magpie_session";
 export const SESSION_MAX_AGE_S = 60 * 60 * 8; // 8 hours
 
@@ -36,8 +38,7 @@ function timingSafeEqual(a: string, b: string): boolean {
 
 /** The configured admin secret, or `null` when unset/empty (⇒ fail closed). */
 export function getAdminSecret(): string | null {
-	const secret = process.env.MAGPIE_ADMIN_SECRET;
-	return typeof secret === "string" && secret.length > 0 ? secret : null;
+	return envValue(process.env.MAGPIE_ADMIN_SECRET);
 }
 
 /** True when the server is configured to allow admin mutations at all. */

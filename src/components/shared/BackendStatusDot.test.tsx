@@ -18,6 +18,33 @@ describe("BackendStatusDot", () => {
 		await waitFor(() => expect(dot.getAttribute("title")).toMatch(/ok/));
 	});
 
+	it("polls the cleaned URL when the env value carries a BOM and CRLF (T-ENV-4)", async () => {
+		vi.stubEnv("NEXT_PUBLIC_API_URL", `\ufeff${API_URL}\r\n`);
+		server.use(
+			http.get(`${API_URL}/health`, () =>
+				HttpResponse.json({ status: "ok", service: "magpie", db: "ok" }),
+			),
+		);
+		try {
+			renderUI(<BackendStatusDot />);
+			const dot = screen.getByTestId("backend-status-dot");
+			await waitFor(() => expect(dot.getAttribute("title")).toMatch(/ok/));
+		} finally {
+			vi.unstubAllEnvs();
+		}
+	});
+
+	it("shows the backend as down, without fetching, when the URL is unusable (T-ENV-4)", async () => {
+		vi.stubEnv("NEXT_PUBLIC_API_URL", "not a url");
+		try {
+			renderUI(<BackendStatusDot />);
+			const dot = screen.getByTestId("backend-status-dot");
+			await waitFor(() => expect(dot.getAttribute("title")).toMatch(/unreachable/));
+		} finally {
+			vi.unstubAllEnvs();
+		}
+	});
+
 	it("renders degraded state when db is not ok", async () => {
 		server.use(
 			http.get(`${API_URL}/health`, () =>

@@ -29,6 +29,17 @@ describe("getAdminSecret / isAdminConfigured", () => {
 		expect(getAdminSecret()).toBe("hunter2");
 		expect(isAdminConfigured()).toBe(true);
 	});
+
+	it("trims a BOM and CRLF so the typed secret can match (T-ENV-3)", () => {
+		process.env.MAGPIE_ADMIN_SECRET = "\ufeffhunter2\r\n";
+		expect(getAdminSecret()).toBe("hunter2");
+	});
+
+	it("treats a whitespace-only secret as unset, so admin stays closed (T-ENV-3)", () => {
+		process.env.MAGPIE_ADMIN_SECRET = " \r\n";
+		expect(getAdminSecret()).toBeNull();
+		expect(isAdminConfigured()).toBe(false);
+	});
 });
 
 describe("session tokens", () => {

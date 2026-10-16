@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { getBaseUrl } from "@/lib/env";
 import { cn } from "@/lib/utils";
 
 type HealthState = "unknown" | "ok" | "degraded" | "down";
@@ -10,7 +11,13 @@ export function BackendStatusDot() {
 	const [db, setDb] = useState<string>("");
 
 	useEffect(() => {
-		const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+		let base: string;
+		try {
+			base = getBaseUrl();
+		} catch {
+			setState("down");
+			return;
+		}
 		let cancelled = false;
 		let interval: ReturnType<typeof setInterval> | null = null;
 

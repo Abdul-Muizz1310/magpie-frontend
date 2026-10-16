@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { getBaseUrl } from "./env";
 import type {
 	EnqueueResponse,
 	Heal,
@@ -24,9 +25,7 @@ import {
 	SourceSummarySchema,
 } from "./schemas";
 
-export function getBaseUrl(): string {
-	return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-}
+export { getBaseUrl };
 
 // ── Error shape ────────────────────────────────────────────────────────────
 

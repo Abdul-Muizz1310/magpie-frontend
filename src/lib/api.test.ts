@@ -362,6 +362,21 @@ describe("error handling (generic)", () => {
 		await expect(fetchSource("nonexistent")).rejects.toBeInstanceOf(ApiError);
 	});
 
+	it("reaches the backend when the env value carries a BOM and CRLF (T-ENV-4)", async () => {
+		const saved = process.env.NEXT_PUBLIC_API_URL;
+		process.env.NEXT_PUBLIC_API_URL = `\ufeff${API_URL}\r\n`;
+		server.use(
+			http.get(`${API_URL}/health`, () =>
+				HttpResponse.json({ status: "ok", service: "magpie", db: "ok" }),
+			),
+		);
+		try {
+			await expect(fetchHealth()).resolves.toMatchObject({ db: "ok" });
+		} finally {
+			process.env.NEXT_PUBLIC_API_URL = saved;
+		}
+	});
+
 	it("falls back to localhost:8000 when NEXT_PUBLIC_API_URL is unset", async () => {
 		const saved = process.env.NEXT_PUBLIC_API_URL;
 		delete process.env.NEXT_PUBLIC_API_URL;
