@@ -6,9 +6,11 @@ import { Prompt } from "@/components/terminal/Prompt";
 import { TerminalWindow } from "@/components/terminal/TerminalWindow";
 import { isAdminConfigured } from "@/lib/auth";
 
+// Nothing to find here in search; robots.txt still allows it, so a shared link previews.
 export const metadata: Metadata = {
-	title: "sign in — magpie",
+	title: "sign in",
 	description: "Authenticate to create, edit, or delete scrapers.",
+	robots: { index: false },
 };
 
 export default async function LoginPage(props: {

@@ -5,7 +5,7 @@ import { TerminalWindow } from "@/components/terminal/TerminalWindow";
 import { getHealth, getSources } from "@/lib/data";
 
 export const metadata: Metadata = {
-	title: "demo — magpie",
+	title: "demo",
 	description: "How magpie's config-driven, self-healing, async-queued scraping works.",
 };
 

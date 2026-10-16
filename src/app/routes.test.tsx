@@ -1,4 +1,5 @@
 // @vitest-environment node
+import type { Metadata } from "next";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/api";
 import {
@@ -40,6 +41,8 @@ const editPage = await import("./sources/[name]/edit/page");
 const runPage = await import("./runs/[id]/page");
 const demoPage = await import("./demo/page");
 const loginPage = await import("./login/page");
+const homePage = await import("./page");
+const newSourcePage = await import("./sources/new/page");
 
 const params = <T,>(v: T) => Promise.resolve(v);
 const search = <T,>(v: T) => Promise.resolve(v);
@@ -53,7 +56,7 @@ describe("/sources/[name] (source detail)", () => {
 
 	it("generateMetadata returns a source-specific title (P3)", async () => {
 		const meta = await page.generateMetadata({ params: params({ name: "hackernews" }) });
-		expect(meta.title).toBe("hackernews — magpie");
+		expect(meta.title).toBe("hackernews");
 	});
 
 	it("fetches runs/heals/source/config in parallel with the right pagination offset", async () => {
@@ -110,7 +113,7 @@ describe("/sources/[name]/items", () => {
 
 	it("generateMetadata returns an items title", async () => {
 		const meta = await page.generateMetadata({ params: params({ name: "hackernews" }) });
-		expect(meta.title).toContain("hackernews");
+		expect(meta.title).toBe("hackernews items");
 	});
 
 	it("uses PAGE_SIZE=50 offset math for ?page=2", async () => {
@@ -164,7 +167,7 @@ describe("/sources/[name]/edit", () => {
 
 	it("generateMetadata returns an edit title", async () => {
 		const meta = await page.generateMetadata({ params: params({ name: "custom-one" }) });
-		expect(meta.title).toContain("custom-one");
+		expect(meta.title).toBe("edit custom-one");
 	});
 
 	it("renders the editor for an api-origin source", async () => {
@@ -203,7 +206,7 @@ describe("/runs/[id]", () => {
 		const meta = await page.generateMetadata({
 			params: params({ id: "abcdef12-0000-4000-8000-000000000000" }),
 		});
-		expect(meta.title).toContain("abcdef12");
+		expect(meta.title).toBe("run abcdef12");
 	});
 
 	it("renders the live run view", async () => {
@@ -262,5 +265,55 @@ describe("static pages", () => {
 	it("new-source page renders", async () => {
 		const { default: NewSourcePage } = await import("./sources/new/page");
 		expect(NewSourcePage()).toBeTruthy();
+	});
+});
+
+describe("page metadata (T-FE-09)", () => {
+	const id = "abcdef12-0000-4000-8000-000000000000";
+	const pages: [string, Promise<Metadata>, string][] = [
+		["/heals", Promise.resolve(healsPage.metadata), "heals"],
+		["/demo", Promise.resolve(demoPage.metadata), "demo"],
+		["/login", Promise.resolve(loginPage.metadata), "sign in"],
+		["/sources/new", Promise.resolve(newSourcePage.metadata), "new source"],
+		["/sources/[name]", detailPage.generateMetadata({ params: params({ name: "hn" }) }), "hn"],
+		[
+			"/sources/[name]/items",
+			itemsPage.generateMetadata({ params: params({ name: "hn" }) }),
+			"hn items",
+		],
+		[
+			"/sources/[name]/edit",
+			editPage.generateMetadata({ params: params({ name: "hn" }) }),
+			"edit hn",
+		],
+		["/runs/[id]", runPage.generateMetadata({ params: params({ id }) }), "run abcdef12"],
+	];
+
+	it.each(pages)(
+		"%s has its own short title, without the site suffix",
+		async (_route, meta, title) => {
+			expect((await meta).title).toBe(title);
+		},
+	);
+
+	it.each(pages)(
+		"%s leaves Open Graph, Twitter and the canonical to the root",
+		async (_route, meta) => {
+			const m = await meta;
+			expect(m).not.toHaveProperty("openGraph");
+			expect(m).not.toHaveProperty("twitter");
+			expect(m).not.toHaveProperty("alternates");
+		},
+	);
+
+	it("keeps /login out of search, and only /login", async () => {
+		expect(loginPage.metadata.robots).toEqual({ index: false });
+		for (const [route, meta] of pages) {
+			if (route !== "/login") expect((await meta).robots, route).toBeUndefined();
+		}
+	});
+
+	it("gives the home page the default title, a canonical of / and no noindex", () => {
+		expect(homePage.metadata).toEqual({ alternates: { canonical: "/" } });
 	});
 });

@@ -9,7 +9,7 @@ export async function generateMetadata(props: {
 	params: Promise<{ id: string }>;
 }): Promise<Metadata> {
 	const { id } = await props.params;
-	return { title: `run ${id.slice(0, 8)} — magpie` };
+	return { title: `run ${id.slice(0, 8)}` };
 }
 
 export default async function RunDetailPage(props: {

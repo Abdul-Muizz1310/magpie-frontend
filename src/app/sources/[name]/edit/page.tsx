@@ -14,7 +14,7 @@ export async function generateMetadata(props: {
 	params: Promise<{ name: string }>;
 }): Promise<Metadata> {
 	const { name } = await props.params;
-	return { title: `edit ${name} — magpie` };
+	return { title: `edit ${name}` };
 }
 
 export default async function EditSourcePage(props: {

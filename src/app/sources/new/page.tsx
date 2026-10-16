@@ -6,7 +6,7 @@ import { PageFrame } from "@/components/terminal/PageFrame";
 import { Prompt } from "@/components/terminal/Prompt";
 
 export const metadata: Metadata = {
-	title: "new source — magpie",
+	title: "new source",
 	description: "Define a new YAML scraper. Form builder or raw YAML.",
 };
 

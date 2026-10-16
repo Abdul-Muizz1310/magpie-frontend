@@ -11,7 +11,7 @@ import type { Heal } from "@/lib/schemas";
 const PAGE_SIZE = 10;
 
 export const metadata: Metadata = {
-	title: "heals — magpie",
+	title: "heals",
 	description: "Every LLM-proposed selector fix: PRs, DB patches, and confidence scores.",
 };
 

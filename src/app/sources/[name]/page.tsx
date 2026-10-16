@@ -24,7 +24,7 @@ export async function generateMetadata(props: {
 }): Promise<Metadata> {
 	const { name } = await props.params;
 	return {
-		title: `${name} — magpie`,
+		title: name,
 		description: `Run history, heal attempts, and config for the ${name} scraper.`,
 	};
 }

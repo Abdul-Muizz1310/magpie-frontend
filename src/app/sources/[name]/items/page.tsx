@@ -18,7 +18,7 @@ export async function generateMetadata(props: {
 }): Promise<Metadata> {
 	const { name } = await props.params;
 	return {
-		title: `${name} items — magpie`,
+		title: `${name} items`,
 		description: `Every persisted item scraped from ${name}, with full captured fields.`,
 	};
 }

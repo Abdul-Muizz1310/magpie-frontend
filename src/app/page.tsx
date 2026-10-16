@@ -1,9 +1,12 @@
 import { Plus } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { SourcesGrid, SourcesGridSkeleton } from "@/components/sources/SourcesGrid";
 import { PageFrame } from "@/components/terminal/PageFrame";
 import { Prompt } from "@/components/terminal/Prompt";
+
+export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 export default function Home() {
 	return (

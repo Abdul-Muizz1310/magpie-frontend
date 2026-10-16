@@ -28,6 +28,8 @@ export default defineConfig({
 			include: ["src/**/*.{ts,tsx}"],
 			exclude: [
 				"**/*.test.{ts,tsx}",
+				// Shared test helpers colocated with their tests (not collected as test files).
+				"**/*.test-helpers.ts",
 				"**/*.d.ts",
 				// Root layout: <html>/fonts/metadata shell that jsdom can't meaningfully
 				// exercise. Everything else — including page.tsx composition logic,

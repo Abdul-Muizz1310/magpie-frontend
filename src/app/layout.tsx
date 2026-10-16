@@ -1,5 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { SITE } from "@/lib/site/config";
+import { ROOT_VIEWPORT, rootMetadata } from "@/lib/site/metadata";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,11 +14,8 @@ const geistMono = Geist_Mono({
 	subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-	title: "magpie — YAML scrapers that self-heal",
-	description:
-		"Define a scraper in 20 lines of YAML. When a selector breaks, an LLM patches it and opens a PR.",
-};
+export const metadata: Metadata = rootMetadata(SITE);
+export const viewport: Viewport = ROOT_VIEWPORT;
 
 export default function RootLayout({
 	children,
