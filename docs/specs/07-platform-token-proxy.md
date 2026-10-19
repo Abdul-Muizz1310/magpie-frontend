@@ -88,7 +88,12 @@ so Next never prerenders it, non-GET methods are never cached, and the upstream 
    logs the variable's name and the reason, never the value. No upstream call is made.
 5. Upstream request: method kept; headers allowlisted (`content-type`, `accept`, `last-event-id`,
    `x-request-id`; never `cookie` or `authorization`), plus `X-Platform-Token` and
-   `X-Forwarded-For` (the incoming `x-forwarded-for`, else `x-real-ip`, else none); the body as an
+   `X-Forwarded-For` set to **exactly one client address** (`clientAddress()`): the leftmost
+   entry of the incoming `x-forwarded-for` (Vercel's edge writes the visitor's address there), else
+   `x-real-ip`; a value that is not an IPv4/IPv6 address is skipped, and with no usable address the
+   header is omitted. Never the incoming chain: magpie-backend keys a frontend token's rate-limit
+   bucket on `magpie-frontend:{leftmost X-Forwarded-For}` (platform contract v2 §2, amended
+   2026-10-20), so a forwarded chain would let a caller pick its own bucket. The body as an
    ArrayBuffer for non-GET methods (omitted when empty); `cache: "no-store"`, `redirect: "manual"`,
    `signal: request.signal`.
 6. A fetch that throws is 502 `{"error":"backend unreachable"}`.
@@ -125,8 +130,10 @@ server-side code can sign. No real key is ever read.
 8. Proxy, happy path: a GET reaches `${API_URL}/sources?…` with the query kept, and the status and
    JSON come back; the forwarded token verifies, with the claims above.
 9. Proxy, headers: the four request headers pass; `cookie`, `authorization` and anything else do
-   not; `X-Forwarded-For` is the incoming one, else `x-real-ip`, else absent; the five response
-   headers pass; `set-cookie`, `location` and the rest do not.
+   not; `X-Forwarded-For` is one address — the incoming chain's leftmost entry (IPv4 or IPv6,
+   trimmed), else a valid `x-real-ip`, else absent; a non-IP leftmost entry falls through to
+   `x-real-ip`; the forwarded value never contains a comma; the five response headers pass;
+   `set-cookie`, `location` and the rest do not.
 10. Proxy, statuses: 401, 404 and 429 (with `retry-after`) pass through; a 204 has no body; a 3xx
     is not followed.
 11. Proxy, bodies: POST, PUT, PATCH and DELETE from an admin forward method and body byte for byte.

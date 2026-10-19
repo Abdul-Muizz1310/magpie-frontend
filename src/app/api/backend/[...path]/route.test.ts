@@ -18,7 +18,7 @@ vi.mock("next/headers", () => ({
 }));
 
 const route = await import("./route");
-const { isWithinBackend, upstreamUrl } = await import("@/lib/backend-proxy");
+const { clientAddress, isWithinBackend, upstreamUrl } = await import("@/lib/backend-proxy");
 const { SIGNING_KEY_ENV } = await import("@/lib/platform-token");
 const { mintSessionToken } = await import("@/lib/auth");
 const { __resetRateLimit } = await import("@/lib/rate-limit");
@@ -137,12 +137,30 @@ describe("header allowlists (T-PTP-9)", () => {
 		expect(upstream?.get("accept")).toBe("text/event-stream");
 		expect(upstream?.get("last-event-id")).toBe("42");
 		expect(upstream?.get("x-request-id")).toBe("req-1");
-		expect(upstream?.get("x-forwarded-for")).toBe("198.51.100.1, 10.0.0.1");
+		// Exactly one client address, never the chain (contract v2 §2, amended 2026-10-20).
+		expect(upstream?.get("x-forwarded-for")).toBe("198.51.100.1");
 		expect(verifyToken(upstream?.get("x-platform-token") ?? "", keys.publicKey)).not.toBeNull();
 		expect(upstream?.get("cookie")).toBeNull();
 		expect(upstream?.get("authorization")).toBeNull();
 		expect(upstream?.get("x-custom")).toBeNull();
 		expect(upstream?.get("x-real-ip")).toBeNull();
+	});
+
+	it("forwards the leftmost address of a spoofable chain, one address only", async () => {
+		const seen: (string | null)[] = [];
+		server.use(
+			http.get(`${API_URL}/sources`, ({ request }) => {
+				seen.push(request.headers.get("x-forwarded-for"));
+				return HttpResponse.json([]);
+			}),
+		);
+		await call("GET", ["sources"], { headers: { "x-forwarded-for": "203.0.113.7,198.51.100.2" } });
+		await call("GET", ["sources"], { headers: { "x-forwarded-for": " 2001:db8::1 , 10.0.0.1" } });
+		await call("GET", ["sources"], {
+			headers: { "x-forwarded-for": "not-an-ip, 10.0.0.1", "x-real-ip": "192.0.2.9" },
+		});
+		await call("GET", ["sources"], { headers: { "x-forwarded-for": "garbage" } });
+		expect(seen).toEqual(["203.0.113.7", "2001:db8::1", "192.0.2.9", null]);
 	});
 
 	it("falls back to x-real-ip for X-Forwarded-For, and sends none without either", async () => {
@@ -443,5 +461,21 @@ describe("streaming (T-PTP-16)", () => {
 		} finally {
 			fetchSpy.mockRestore();
 		}
+	});
+});
+
+describe("clientAddress (T-PTP-9)", () => {
+	it.each([
+		[{ "x-forwarded-for": "198.51.100.1" }, "198.51.100.1"],
+		[{ "x-forwarded-for": "198.51.100.1, 10.0.0.1, 10.0.0.2" }, "198.51.100.1"],
+		[{ "x-forwarded-for": "  2001:db8::1  ,10.0.0.1" }, "2001:db8::1"],
+		[{ "x-forwarded-for": "", "x-real-ip": "192.0.2.9" }, "192.0.2.9"],
+		[{ "x-forwarded-for": "unknown, 10.0.0.1", "x-real-ip": "192.0.2.9" }, "192.0.2.9"],
+		[{ "x-real-ip": " 192.0.2.9 " }, "192.0.2.9"],
+		[{ "x-real-ip": "a, b" }, null],
+		[{ "x-forwarded-for": "198.51.100.1:4711" }, null],
+		[{}, null],
+	])("%j -> %s", (headers, expected) => {
+		expect(clientAddress(new Headers(headers))).toBe(expected);
 	});
 });
