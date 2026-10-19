@@ -39,3 +39,26 @@ jobs:
       # The signing key and signer are server-only (spec 07); no client bundle may carry them.
       - name: client bundles carry no signing code
         run: "! grep -rlE 'MAGPIE_FRONTEND_SIGNING_KEY_PRIVATE|createPrivateKey' .next/static"
+
+  # NOTE: no deploy job — Vercel and Render deploy on push by themselves. This job
+  # checks that the backend this frontend reads actually came up (spec 08). It is
+  # inert unless the SMOKE_BASE_URL repository *variable* is set (a bare origin,
+  # e.g. https://magpie-backend-t4bb.onrender.com): test/smoke.test.ts then skips
+  # its live test without a single HTTP request, so a fork PR or a parked
+  # free-tier service can never fail CI. Kept out of the `test` job so that job's
+  # counts never depend on the variable.
+  smoke:
+    needs: build
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v5
+        with: { version: 10 }
+      - uses: actions/setup-node@v7
+        with: { node-version: 24, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - name: Post-deploy /health smoke (skipped when SMOKE_BASE_URL is unset)
+        env:
+          SMOKE_BASE_URL: ${{ vars.SMOKE_BASE_URL }}
+        run: pnpm vitest run test/smoke.test.ts
