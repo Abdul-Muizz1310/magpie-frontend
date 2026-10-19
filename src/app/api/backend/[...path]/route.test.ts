@@ -102,6 +102,8 @@ describe("happy path (T-PTP-8)", () => {
 		expect(await res.json()).toStrictEqual([makeSourceSummary()]);
 		expect(seen?.url).toBe(`${API_URL}/sources?limit=5&q=a%20b`);
 		const claims = verifyToken(seen?.token ?? "", keys.publicKey)?.claims;
+		expect(claims?.iss).toBe("magpie-frontend");
+		expect(claims?.aud).toBe("magpie");
 		expect(claims?.sub).toBe("magpie-frontend");
 		expect(claims?.role).toBe("frontend");
 		expect(claims?.service).toBe("magpie");

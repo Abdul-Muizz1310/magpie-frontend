@@ -24,8 +24,13 @@ and stays closed to direct internet calls.
   surrounding whitespace are stripped. A blank value is unset. A value that is not standard base64,
   or does not decode as an Ed25519 PKCS#8 private key, is malformed.
 - JWT: compact JWS. Header `{"alg":"EdDSA","typ":"JWT","kid":"magpie-frontend-2026-10"}`. Claims
-  `{"sub":"magpie-frontend","role":"frontend","service":"magpie","iat":<now>,"exp":<now+60>,"jti":<uuid>}`,
+  `{"iss":"magpie-frontend","aud":"magpie","sub":"magpie-frontend","role":"frontend","service":"magpie","iat":<now>,"exp":<now+60>,"jti":<uuid>}`,
   `now` in whole seconds. Lifetime exactly 60 s, minted fresh for every upstream request.
+- **2026-10-20 — platform contract v2** (workspace `docs/specs/platform-contract-v2.md` §4):
+  `iss` is `"magpie-frontend"` and `aud` is `"magpie"` (one string, not a list). magpie-backend on
+  contract v2 rejects a token without them; the backend on contract v1 rejects a token *with* `aud`
+  (PyJWT refuses an `aud` it was not told to expect), so this ships after the backend's contract-v2
+  merge, as the contract's rollout order says.
 - `src/lib/platform-token.ts` (starts with `import "server-only"`) holds it: the pure parts
   (`base64url`, `tokenClaims(now, jti)`, `signingInput(claims)`), `parseSigningKey(raw)` and
   `signToken(key, claims)` (Ed25519 is deterministic), and `mintPlatformToken()`, which reads the
@@ -101,7 +106,8 @@ Tests make their own throwaway keypairs (`test/platform-keys.ts`); `test/setup.t
 server-side code can sign. No real key is ever read.
 
 1. `base64url`: no padding, `-` and `_` for `+` and `/`, decodes back to the input.
-2. `tokenClaims(now, jti)`: exactly `sub`, `role`, `service`, `iat = now`, `exp = now + 60`, `jti`.
+2. `tokenClaims(now, jti)`: exactly `iss = "magpie-frontend"`, `aud = "magpie"` (a string), `sub`, `role`,
+   `service`, `iat = now`, `exp = now + 60`, `jti`.
 3. `signToken`: three segments; the header is the fixed one; the signature verifies with the
    matching public key and fails with another keypair's; the same inputs give the same token.
 4. `parseSigningKey`: unset, blank and BOM-only are missing; a BOM + CRLF wrapped key parses; not

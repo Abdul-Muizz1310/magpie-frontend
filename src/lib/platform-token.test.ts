@@ -43,6 +43,8 @@ describe("tokenClaims (T-PTP-2)", () => {
 	it("is exactly the contract's claim set, living 60 seconds", () => {
 		const claims = tokenClaims(NOW_S, JTI);
 		expect(claims).toStrictEqual({
+			iss: "magpie-frontend",
+			aud: "magpie",
 			sub: "magpie-frontend",
 			role: "frontend",
 			service: "magpie",
@@ -50,7 +52,18 @@ describe("tokenClaims (T-PTP-2)", () => {
 			exp: NOW_S + 60,
 			jti: JTI,
 		});
-		expect(Object.keys(claims)).toEqual(["sub", "role", "service", "iat", "exp", "jti"]);
+		expect(Object.keys(claims)).toEqual([
+			"iss",
+			"aud",
+			"sub",
+			"role",
+			"service",
+			"iat",
+			"exp",
+			"jti",
+		]);
+		// Contract v2: exactly one audience, as a string; a list is rejected by the backend.
+		expect(typeof claims.aud).toBe("string");
 		expect(TOKEN_LIFETIME_S).toBe(60);
 	});
 });
@@ -136,6 +149,8 @@ describe("mintPlatformToken (T-PTP-5)", () => {
 		expect(verified?.claims.iat).toBe(NOW_S);
 		expect(verified?.claims.exp).toBe(NOW_S + 60);
 		expect(verified?.claims.sub).toBe("magpie-frontend");
+		expect(verified?.claims.iss).toBe("magpie-frontend");
+		expect(verified?.claims.aud).toBe("magpie");
 		expect(verified?.claims.jti).toMatch(
 			/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
 		);

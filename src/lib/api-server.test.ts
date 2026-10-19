@@ -41,6 +41,8 @@ describe("serverApi carries a signed platform token (T-PTP-6)", () => {
 		const verified = verifyToken(seen[0].token ?? "", keys.publicKey);
 		expect(verified).not.toBeNull();
 		const claims = verified?.claims ?? {};
+		expect(claims.iss).toBe("magpie-frontend");
+		expect(claims.aud).toBe("magpie");
 		expect(claims.sub).toBe("magpie-frontend");
 		expect(claims.role).toBe("frontend");
 		expect(claims.service).toBe("magpie");
