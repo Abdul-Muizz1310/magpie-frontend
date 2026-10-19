@@ -219,11 +219,12 @@ pnpm test -- --coverage      # coverage report
 
 | Metric | Value |
 |---|---|
-| **Tests** | 218 tests (unit + route-level) |
-| **Line coverage** | **92%** |
+| **Tests** | 398 tests (unit + route-level); 397 run everywhere, the live `/health` smoke test runs only when `SMOKE_BASE_URL` is set |
+| **Line coverage** | **94%** |
 | **Coverage scope** | Includes `app/**/page.tsx` composition logic and the error/not-found boundaries — route-level tests invoke each page against a mocked data layer (async RSCs can't be rendered in jsdom) and assert `notFound()`, `generateMetadata`, and pagination-offset behavior |
 | **Framework** | Vitest + Testing Library + MSW 2 |
-| **API mocking** | MSW 2 request handlers — no real backend in tests |
+| **API mocking** | MSW 2 request handlers — no real backend in tests (the opt-in smoke test is the one exception) |
+| **CI** | lint + typecheck → test with coverage → `next build` (plus a check that no client bundle carries signing code) → push-only `smoke` job that probes the backend's `/health` via the `SMOKE_BASE_URL` repository variable, inert when unset |
 | **Validation** | Zod schemas validated in test assertions |
 | **Methodology** | Spec-TDD — test cases enumerated before implementation |
 
