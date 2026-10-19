@@ -8,6 +8,13 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    ignore:
+      # `next build` resolves typescript/lib/typescript.js; TypeScript 7 (the Go
+      # rewrite) ships no such file, so the bump fails the build as "you do not
+      # have the required package(s) installed" (PR #13). test/toolchain.test.ts
+      # holds the same line.
+      - dependency-name: "typescript"
+        versions: [">=7"]
     # react and react-dom are both pinned to one exact version and must be
     # raised together. Ungrouped, dependabot opens a PR per package and lifts
     # only one, and react-dom reaches into react internals that are guaranteed
