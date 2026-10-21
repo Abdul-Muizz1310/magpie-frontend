@@ -5,6 +5,7 @@ import { ConfigError, envValue } from "./env";
 
 // magpie-frontend's platform token (spec 07, workspace DR-0030): a 60-second EdDSA JWT, signed
 // with magpie-frontend's own Ed25519 key, that magpie-backend accepts in `X-Platform-Token`.
+// Platform contract v2: `iss` names this frontend and `aud` names the one backend it may call.
 // Server-only: the key and the signer must never reach a client bundle.
 
 export const SIGNING_KEY_ENV = "MAGPIE_FRONTEND_SIGNING_KEY_PRIVATE";
@@ -13,6 +14,8 @@ export const TOKEN_LIFETIME_S = 60;
 export const TOKEN_HEADER = { alg: "EdDSA", typ: "JWT", kid: "magpie-frontend-2026-10" } as const;
 
 export type PlatformTokenClaims = {
+	iss: "magpie-frontend";
+	aud: "magpie";
 	sub: "magpie-frontend";
 	role: "frontend";
 	service: "magpie";
@@ -34,6 +37,8 @@ export function base64url(input: string | Uint8Array): string {
 /** The claims for a token issued at `nowS` (whole seconds). */
 export function tokenClaims(nowS: number, jti: string): PlatformTokenClaims {
 	return {
+		iss: "magpie-frontend",
+		aud: "magpie",
 		sub: "magpie-frontend",
 		role: "frontend",
 		service: "magpie",

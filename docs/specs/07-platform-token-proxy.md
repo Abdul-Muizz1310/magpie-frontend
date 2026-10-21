@@ -24,8 +24,13 @@ and stays closed to direct internet calls.
   surrounding whitespace are stripped. A blank value is unset. A value that is not standard base64,
   or does not decode as an Ed25519 PKCS#8 private key, is malformed.
 - JWT: compact JWS. Header `{"alg":"EdDSA","typ":"JWT","kid":"magpie-frontend-2026-10"}`. Claims
-  `{"sub":"magpie-frontend","role":"frontend","service":"magpie","iat":<now>,"exp":<now+60>,"jti":<uuid>}`,
+  `{"iss":"magpie-frontend","aud":"magpie","sub":"magpie-frontend","role":"frontend","service":"magpie","iat":<now>,"exp":<now+60>,"jti":<uuid>}`,
   `now` in whole seconds. Lifetime exactly 60 s, minted fresh for every upstream request.
+- **2026-10-20 — platform contract v2** (workspace `docs/specs/platform-contract-v2.md` §4):
+  `iss` is `"magpie-frontend"` and `aud` is `"magpie"` (one string, not a list). magpie-backend on
+  contract v2 rejects a token without them; the backend on contract v1 rejects a token *with* `aud`
+  (PyJWT refuses an `aud` it was not told to expect), so this ships after the backend's contract-v2
+  merge, as the contract's rollout order says.
 - `src/lib/platform-token.ts` (starts with `import "server-only"`) holds it: the pure parts
   (`base64url`, `tokenClaims(now, jti)`, `signingInput(claims)`), `parseSigningKey(raw)` and
   `signToken(key, claims)` (Ed25519 is deterministic), and `mintPlatformToken()`, which reads the
@@ -83,7 +88,12 @@ so Next never prerenders it, non-GET methods are never cached, and the upstream 
    logs the variable's name and the reason, never the value. No upstream call is made.
 5. Upstream request: method kept; headers allowlisted (`content-type`, `accept`, `last-event-id`,
    `x-request-id`; never `cookie` or `authorization`), plus `X-Platform-Token` and
-   `X-Forwarded-For` (the incoming `x-forwarded-for`, else `x-real-ip`, else none); the body as an
+   `X-Forwarded-For` set to **exactly one client address** (`clientAddress()`): the leftmost
+   entry of the incoming `x-forwarded-for` (Vercel's edge writes the visitor's address there), else
+   `x-real-ip`; a value that is not an IPv4/IPv6 address is skipped, and with no usable address the
+   header is omitted. Never the incoming chain: magpie-backend keys a frontend token's rate-limit
+   bucket on `magpie-frontend:{leftmost X-Forwarded-For}` (platform contract v2 §2, amended
+   2026-10-20), so a forwarded chain would let a caller pick its own bucket. The body as an
    ArrayBuffer for non-GET methods (omitted when empty); `cache: "no-store"`, `redirect: "manual"`,
    `signal: request.signal`.
 6. A fetch that throws is 502 `{"error":"backend unreachable"}`.
@@ -101,7 +111,8 @@ Tests make their own throwaway keypairs (`test/platform-keys.ts`); `test/setup.t
 server-side code can sign. No real key is ever read.
 
 1. `base64url`: no padding, `-` and `_` for `+` and `/`, decodes back to the input.
-2. `tokenClaims(now, jti)`: exactly `sub`, `role`, `service`, `iat = now`, `exp = now + 60`, `jti`.
+2. `tokenClaims(now, jti)`: exactly `iss = "magpie-frontend"`, `aud = "magpie"` (a string), `sub`, `role`,
+   `service`, `iat = now`, `exp = now + 60`, `jti`.
 3. `signToken`: three segments; the header is the fixed one; the signature verifies with the
    matching public key and fails with another keypair's; the same inputs give the same token.
 4. `parseSigningKey`: unset, blank and BOM-only are missing; a BOM + CRLF wrapped key parses; not
@@ -119,8 +130,10 @@ server-side code can sign. No real key is ever read.
 8. Proxy, happy path: a GET reaches `${API_URL}/sources?…` with the query kept, and the status and
    JSON come back; the forwarded token verifies, with the claims above.
 9. Proxy, headers: the four request headers pass; `cookie`, `authorization` and anything else do
-   not; `X-Forwarded-For` is the incoming one, else `x-real-ip`, else absent; the five response
-   headers pass; `set-cookie`, `location` and the rest do not.
+   not; `X-Forwarded-For` is one address — the incoming chain's leftmost entry (IPv4 or IPv6,
+   trimmed), else a valid `x-real-ip`, else absent; a non-IP leftmost entry falls through to
+   `x-real-ip`; the forwarded value never contains a comma; the five response headers pass;
+   `set-cookie`, `location` and the rest do not.
 10. Proxy, statuses: 401, 404 and 429 (with `retry-after`) pass through; a 204 has no body; a 3xx
     is not followed.
 11. Proxy, bodies: POST, PUT, PATCH and DELETE from an admin forward method and body byte for byte.

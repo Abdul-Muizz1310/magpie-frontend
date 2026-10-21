@@ -1,5 +1,6 @@
 import "server-only";
 
+import { isIP } from "node:net";
 import { ConfigError, getBaseUrl } from "./env";
 import { mintPlatformToken, PLATFORM_TOKEN_HEADER } from "./platform-token";
 import { requireAdmin } from "./session";
@@ -60,6 +61,23 @@ export function upstreamUrl(base: string, segments: readonly string[], search: s
 	return isWithinBackend(url, new URL(base)) ? url : null;
 }
 
+/** `value` trimmed when it is one IPv4 or IPv6 address, else null. */
+function singleAddress(value: string | null | undefined): string | null {
+	const candidate = value?.trim() ?? "";
+	return isIP(candidate) === 0 ? null : candidate;
+}
+
+/**
+ * The one visitor address to forward: the leftmost `x-forwarded-for` entry (Vercel's edge writes
+ * the visitor's address there), else `x-real-ip`; null when neither is an IP address. Never the
+ * chain: magpie-backend keys a frontend token's rate-limit bucket on this address (platform
+ * contract v2 §2, amended 2026-10-20).
+ */
+export function clientAddress(incoming: Headers): string | null {
+	const leftmost = incoming.get("x-forwarded-for")?.split(",")[0];
+	return singleAddress(leftmost) ?? singleAddress(incoming.get("x-real-ip"));
+}
+
 /** The allowlisted request headers, the token, and the visitor's address for rate limits. */
 export function upstreamRequestHeaders(incoming: Headers, token: string): Headers {
 	const out = new Headers();
@@ -68,7 +86,7 @@ export function upstreamRequestHeaders(incoming: Headers, token: string): Header
 		if (value !== null) out.set(name, value);
 	}
 	out.set(PLATFORM_TOKEN_HEADER, token);
-	const client = incoming.get("x-forwarded-for") ?? incoming.get("x-real-ip");
+	const client = clientAddress(incoming);
 	if (client !== null) out.set("x-forwarded-for", client);
 	return out;
 }

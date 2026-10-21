@@ -219,7 +219,7 @@ pnpm test -- --coverage      # coverage report
 
 | Metric | Value |
 |---|---|
-| **Tests** | 398 tests (unit + route-level); 397 run everywhere, the live `/health` smoke test runs only when `SMOKE_BASE_URL` is set |
+| **Tests** | 408 tests (unit + route-level); 407 run everywhere, the live `/health` smoke test runs only when `SMOKE_BASE_URL` is set |
 | **Line coverage** | **94%** |
 | **Coverage scope** | Includes `app/**/page.tsx` composition logic and the error/not-found boundaries — route-level tests invoke each page against a mocked data layer (async RSCs can't be rendered in jsdom) and assert `notFound()`, `generateMetadata`, and pagination-offset behavior |
 | **Framework** | Vitest + Testing Library + MSW 2 |
