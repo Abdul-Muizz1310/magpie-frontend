@@ -1,7 +1,10 @@
 // @vitest-environment node
 import type { Metadata } from "next";
+import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/api";
+import { SITE } from "@/lib/site/config";
+import { structuredData } from "@/lib/site/structured-data";
 import {
 	makeHeal,
 	makeRun,
@@ -296,21 +299,63 @@ describe("page metadata (T-FE-09)", () => {
 		},
 	);
 
-	it.each(pages)(
-		"%s leaves Open Graph, Twitter and the canonical to the root",
-		async (_route, meta) => {
-			const m = await meta;
-			expect(m).not.toHaveProperty("openGraph");
-			expect(m).not.toHaveProperty("twitter");
-			expect(m).not.toHaveProperty("alternates");
-		},
-	);
+	it.each(pages)("%s leaves Open Graph and Twitter to the root", async (_route, meta) => {
+		const m = await meta;
+		expect(m).not.toHaveProperty("openGraph");
+		expect(m).not.toHaveProperty("twitter");
+	});
 
-	it("keeps /login out of search, and only /login", async () => {
-		expect(loginPage.metadata.robots).toEqual({ index: false });
-		for (const [route, meta] of pages) {
-			if (route !== "/login") expect((await meta).robots, route).toBeUndefined();
+	it("describes /heals and /demo and names each as canonical", () => {
+		expect(healsPage.metadata).toEqual({
+			title: "heals",
+			description: "Every LLM-proposed selector fix: PRs, DB patches, and confidence scores.",
+			alternates: { canonical: "/heals" },
+		});
+		expect(demoPage.metadata).toEqual({
+			title: "demo",
+			description: "How magpie's config-driven, self-healing, async-queued scraping works.",
+			alternates: { canonical: "/demo" },
+		});
+	});
+
+	it("names every sitemap route as its own canonical, each with its own description", () => {
+		const indexable: Record<string, Metadata> = {
+			"/": homePage.metadata,
+			"/heals": healsPage.metadata,
+			"/demo": demoPage.metadata,
+		};
+		expect(Object.keys(indexable)).toEqual([...SITE.routes.sitemap]);
+		for (const [route, m] of Object.entries(indexable)) {
+			expect(m.alternates?.canonical, route).toBe(route);
 		}
+		const descriptions = Object.values(indexable).map((m) => m.description ?? SITE.description);
+		expect(new Set(descriptions).size).toBe(descriptions.length);
+	});
+
+	it("sets a canonical on no page outside the sitemap", async () => {
+		for (const [route, meta] of pages) {
+			if (route !== "/heals" && route !== "/demo") {
+				expect(await meta, route).not.toHaveProperty("alternates");
+			}
+		}
+	});
+
+	it("keeps /login and every run out of search, and nothing else", async () => {
+		const hidden = ["/login", "/runs/[id]"];
+		for (const [route, meta] of pages) {
+			const robots = (await meta).robots;
+			if (hidden.includes(route)) expect(robots, route).toEqual({ index: false });
+			else expect(robots, route).toBeUndefined();
+		}
+	});
+
+	it("renders the site's structured data once on the home page", () => {
+		const html = renderToStaticMarkup(homePage.default());
+		const scripts = [
+			...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g),
+		];
+		expect(scripts).toHaveLength(1);
+		expect(JSON.parse(scripts[0]?.[1] ?? "")).toEqual(structuredData(SITE));
 	});
 
 	it("gives the home page the default title, a canonical of / and no noindex", () => {

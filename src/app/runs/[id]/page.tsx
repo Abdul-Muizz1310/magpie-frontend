@@ -9,7 +9,8 @@ export async function generateMetadata(props: {
 	params: Promise<{ id: string }>;
 }): Promise<Metadata> {
 	const { id } = await props.params;
-	return { title: `run ${id.slice(0, 8)}` };
+	// A run is one scrape's log, not a page anyone searches for; it still previews when shared.
+	return { title: `run ${id.slice(0, 8)}`, robots: { index: false } };
 }
 
 export default async function RunDetailPage(props: {

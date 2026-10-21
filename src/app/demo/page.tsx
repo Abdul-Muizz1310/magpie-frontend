@@ -3,11 +3,13 @@ import { PageFrame } from "@/components/terminal/PageFrame";
 import { Prompt } from "@/components/terminal/Prompt";
 import { TerminalWindow } from "@/components/terminal/TerminalWindow";
 import { getHealth, getSources } from "@/lib/data";
+import { SITE } from "@/lib/site/config";
+import { pageMetadata } from "@/lib/site/metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata(SITE, "/demo", {
 	title: "demo",
 	description: "How magpie's config-driven, self-healing, async-queued scraping works.",
-};
+});
 
 const YAML_SNIPPET = `name: hackernews
 url: https://news.ycombinator.com

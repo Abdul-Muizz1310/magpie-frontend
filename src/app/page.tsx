@@ -5,12 +5,15 @@ import { Suspense } from "react";
 import { SourcesGrid, SourcesGridSkeleton } from "@/components/sources/SourcesGrid";
 import { PageFrame } from "@/components/terminal/PageFrame";
 import { Prompt } from "@/components/terminal/Prompt";
+import { SITE } from "@/lib/site/config";
+import { StructuredData } from "@/lib/site/structured-data";
 
 export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 export default function Home() {
 	return (
 		<PageFrame active="home" statusLeft="magpie.dev ~/sources" statusRight="UTF-8">
+			<StructuredData site={SITE} />
 			<div className="flex flex-col gap-14">
 				<section className="flex flex-col gap-7">
 					<div className="flex flex-col gap-3">

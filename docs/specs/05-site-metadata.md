@@ -61,21 +61,42 @@ suffix itself. Titles come from each page's nav label or `h1`:
 | Route | Title | Notes |
 |---|---|---|
 | `/` | (the default title) | `alternates.canonical: "/"` |
-| `/heals` | `heals` | |
-| `/demo` | `demo` | |
+| `/heals` | `heals` | its own description; canonical `/heals` |
+| `/demo` | `demo` | its own description; canonical `/demo` |
 | `/login` | `sign in` | `robots: { index: false }` |
 | `/sources/new` | `new source` | |
 | `/sources/[name]` | `{name}` | |
 | `/sources/[name]/items` | `{name} items` | |
 | `/sources/[name]/edit` | `edit {name}` | |
-| `/runs/[id]` | `run {id[0..8]}` | |
+| `/runs/[id]` | `run {id[0..8]}` | `robots: { index: false }`: a run is one scrape's log, not a page anyone searches for |
 
 Dynamic titles are built from the route params alone, never from a fetch. Reading `params`
 defers `generateMetadata` to request time under Cache Components, so a browser receives those
 pages' title and Open Graph tags streamed after the static shell, while link-preview and
-search bots (Next's `htmlLimitedBots`) get them in `<head>`. No page sets
-`openGraph`, `twitter` or a canonical other than the home page's: a page-level `openGraph`
-replaces the root one and drops the share image.
+search bots (Next's `htmlLimitedBots`) get them in `<head>`. No page sets `openGraph` or
+`twitter`: a page-level `openGraph` replaces the root one and drops the share image.
+
+Every sitemap route other than `/` describes itself and names itself as canonical through
+`pageMetadata(site, route, { title, description })` (`src/lib/site/metadata.ts`, 2026-10-21). It
+returns the title, the description and the route as canonical, and throws a `SiteConfigError`
+when the module loads on an empty title, a title the template takes past 70 characters, or a
+description outside 50 to 160 characters, so bad copy fails the build. Next fills
+`og:description` and `twitter:description` from the description. No two sitemap routes share a
+description. The dynamic source pages keep their own descriptions and no canonical.
+`/heals?page=…` and `/heals?source=…` name `/heals` as canonical: a filtered or paginated view
+is the same live list, not a page of its own to rank.
+
+## 3a. Structured data
+
+`/` renders one `<script type="application/ld+json">` (`src/lib/site/structured-data.tsx`,
+2026-10-21): a schema.org `@graph` of a `WebSite` (`<origin>/#website`: url, name, description,
+`inLanguage: "en"`, the author as publisher), a `WebApplication` (`<origin>/#app`: url, name,
+description, `applicationCategory: "DeveloperApplication"`, `operatingSystem: "Any"`,
+`isAccessibleForFree: true`, part of the website, by the author) and the author as a `Person`
+(`https://github.com/Abdul-Muizz1310#person`), all from the config. Search engines read the site
+name from the `WebSite` node, so a result says `magpie`, not `vercel.app`. No rating, review or
+price is claimed. Every `<` in the JSON is escaped as `\u003c`, so no value can close the script
+tag.
 
 `/sources/new` and `/sources/[name]/edit` sit behind the auth proxy (`src/proxy.ts`). Its
 matcher covers only those two paths, so the metadata routes are never redirected to `/login`.
@@ -142,14 +163,23 @@ automatically.`, needs three lines at 96 px (18 columns) and fits two at 88 px (
   `apple-icon.png` is 180×180.
 - **T-FE-08** the headline layout: highlight segments, the greedy wrap, the size chosen at each
   boundary (magpie's headline at 88), and the share card's alt text.
-- **T-FE-09** the page titles in §3, without the ` — magpie` suffix; `/login` is `noindex`
-  and the home page is not; the home page's canonical is `/`; no page sets `openGraph` or
-  `twitter`.
+- **T-FE-09** the page titles in §3, without the ` — magpie` suffix; `/login` and
+  `/runs/[id]` are `noindex` and no other page is; every sitemap route names itself as
+  canonical, no other page sets one, and no two sitemap routes share a description; no page
+  sets `openGraph` or `twitter`.
 - **T-FE-10** the `opengraph-image` route answers with a 1200×630 PNG, declares its alt
   text, size and content type, and draws the card under `cacheLife("max")`.
 
 magpie has no E2E tier: the built app's head and every metadata route's content type are
 checked against `pnpm build && pnpm start` with curl.
+
+- **T-FE-11** `pageMetadata` returns the title, description and canonical; it accepts a title
+  the template takes to exactly 70 characters and descriptions of exactly 50 and 160; it rejects
+  an empty title, a title past 70 with the template, and a description under 50 or over 160,
+  naming the page and the reason.
+- **T-FE-12** the structured data: the graph in §3a, derived from the config; its serialisation
+  escapes `<` and parses back to the same value; it renders as one `application/ld+json`
+  script, and the home page renders it once.
 
 ## Acceptance criteria
 

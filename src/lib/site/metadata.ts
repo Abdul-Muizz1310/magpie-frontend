@@ -1,7 +1,7 @@
 import type { Metadata, MetadataRoute, Viewport } from "next";
-import type { Site } from "./define";
+import { type Route, type Site, SiteConfigError } from "./define";
 
-const AUTHOR = { name: "Abdul-Muizz Anwar", url: "https://github.com/Abdul-Muizz1310" };
+export const AUTHOR = { name: "Abdul-Muizz Anwar", url: "https://github.com/Abdul-Muizz1310" };
 const BACKGROUND = "#0a0a0a";
 
 export function rootMetadata(site: Site): Metadata {
@@ -21,6 +21,33 @@ export function rootMetadata(site: Site): Metadata {
 		openGraph: { type: "website", siteName: site.name, locale: "en_US" },
 		// Next fills the Twitter title, description and image from Open Graph.
 		twitter: { card: "summary_large_image" },
+	};
+}
+
+export type PageCopy = { title: string; description: string };
+
+/**
+ * An indexable page's own title and description, and a canonical that names the page itself.
+ * Called at module scope, so bad copy fails the build. Next fills og:description and
+ * twitter:description from the description; the page sets no openGraph, which would replace the
+ * root's and drop the share image.
+ */
+export function pageMetadata(site: Site, route: Route, page: PageCopy): Metadata {
+	const fail = (reason: string): never => {
+		throw new SiteConfigError(`page ${route}: ${reason}`);
+	};
+	// As the root's title template renders it.
+	const shown = `${page.title} — ${site.name}`;
+	if (page.title.length === 0) fail("title must not be empty");
+	if (shown.length > 70) fail(`title must be at most 70 characters with the template: "${shown}"`);
+	const { length } = page.description;
+	if (length < 50 || length > 160) {
+		fail(`description must be 50 to 160 characters, not ${length}`);
+	}
+	return {
+		title: page.title,
+		description: page.description,
+		alternates: { canonical: route },
 	};
 }
 

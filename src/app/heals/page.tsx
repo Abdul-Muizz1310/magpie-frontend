@@ -7,13 +7,15 @@ import { Prompt } from "@/components/terminal/Prompt";
 import { TerminalWindow } from "@/components/terminal/TerminalWindow";
 import { getHeals } from "@/lib/data";
 import type { Heal } from "@/lib/schemas";
+import { SITE } from "@/lib/site/config";
+import { pageMetadata } from "@/lib/site/metadata";
 
 const PAGE_SIZE = 10;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata(SITE, "/heals", {
 	title: "heals",
 	description: "Every LLM-proposed selector fix: PRs, DB patches, and confidence scores.",
-};
+});
 
 export default async function HealsPage(props: {
 	searchParams: Promise<{ page?: string; source?: string }>;
