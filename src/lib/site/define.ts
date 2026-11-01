@@ -20,7 +20,7 @@ export type SiteInput = {
 		/** The `//` comment line above the share card's headline. */
 		comment: string;
 		headline: string;
-		/** The part of the headline set in the accent colour. */
+		/** The part of the headline set in the accent color. */
 		highlight: string;
 	};
 	routes: {

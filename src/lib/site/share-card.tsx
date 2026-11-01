@@ -8,8 +8,12 @@ export const SHARE_CARD_SIZE = { width: 1200, height: 630 } as const;
 
 const PADDING_X = 72;
 const CONTENT_WIDTH = SHARE_CARD_SIZE.width - 2 * PADDING_X;
-/** Geist Mono sets every glyph 600/1000 em wide, so a line's width is known exactly. */
+/** The tracking the headline renders with; the fit model reads the same constant. */
+export const LETTER_SPACING_EM = -0.02;
+/** Geist Mono sets every glyph 600/1000 em wide; tracking is added to each advance. */
 const MONO_ADVANCE = 0.6;
+/** What one glyph (and so one word gap) really advances, in em: 0.58. */
+export const GLYPH_ADVANCE = MONO_ADVANCE + LETTER_SPACING_EM;
 const HEADLINE_LINES = 2;
 export const HEADLINE_SIZES = [96, 88, 80, 72, 64, 56, 48] as const;
 
@@ -48,28 +52,46 @@ export function headlineWords(headline: string, highlight: string): Segment[][] 
 	return words;
 }
 
-/** Whether the words wrap, greedily, into at most `maxLines` lines of `columns` characters. */
-export function fitsIn(words: readonly string[], columns: number, maxLines: number): boolean {
-	let lines = 0;
+/** Greedily wrap words into lines of at most `columns` characters; a word wider than the column gets a line of its own. */
+export function wrapLines(words: readonly string[], columns: number): string[][] {
+	const lines: string[][] = [];
 	let used = 0;
 	for (const word of words) {
-		if (word.length > columns) return false;
-		if (lines === 0 || used + 1 + word.length > columns) {
-			lines += 1;
-			used = word.length;
-		} else {
+		const line = lines.at(-1);
+		if (line && used + 1 + word.length <= columns) {
+			line.push(word);
 			used += 1 + word.length;
+		} else {
+			lines.push([word]);
+			used = word.length;
 		}
 	}
-	return lines <= maxLines;
+	return lines;
 }
 
-/** The largest headline size at which the headline wraps to two lines across the card. */
+/** Whether the words wrap, greedily, into at most `maxLines` lines of `columns` characters. */
+export function fitsIn(words: readonly string[], columns: number, maxLines: number): boolean {
+	if (words.some((word) => word.length > columns)) return false;
+	return wrapLines(words, columns).length <= maxLines;
+}
+
+/** A line that ends in a one-letter word ("a", "I") leaves it dangling before the break. */
+function dangles(words: readonly string[], columns: number): boolean {
+	return wrapLines(words, columns)
+		.slice(0, -1)
+		.some((line) => line.at(-1)?.length === 1);
+}
+
+/**
+ * The largest headline size at which the headline wraps to two lines across the card and
+ * no line ends in a one-letter word.
+ */
 export function headlineSize(headline: string): number {
 	const words = headline.split(" ").filter(Boolean);
-	const fits = HEADLINE_SIZES.find((px) =>
-		fitsIn(words, Math.floor(CONTENT_WIDTH / (MONO_ADVANCE * px)), HEADLINE_LINES),
-	);
+	const fits = HEADLINE_SIZES.find((px) => {
+		const columns = Math.floor(CONTENT_WIDTH / (GLYPH_ADVANCE * px));
+		return fitsIn(words, columns, HEADLINE_LINES) && !dangles(words, columns);
+	});
 	return fits ?? HEADLINE_SIZES[HEADLINE_SIZES.length - 1];
 }
 
@@ -116,7 +138,9 @@ export function ShareCard({ site, icon }: { site: Site; icon: string }) {
 			<div style={{ display: "flex", alignItems: "center", gap: 20 }}>
 				{/* biome-ignore lint/performance/noImgElement: Satori draws a plain <img>; next/image cannot render here */}
 				<img src={icon} width={64} height={64} alt="" />
-				<span style={{ fontSize: 34, fontWeight: 700, letterSpacing: "-0.02em" }}>{site.name}</span>
+				<span style={{ fontSize: 34, fontWeight: 700, letterSpacing: `${LETTER_SPACING_EM}em` }}>
+					{site.name}
+				</span>
 			</div>
 
 			<div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
@@ -125,12 +149,12 @@ export function ShareCard({ site, icon }: { site: Site; icon: string }) {
 					style={{
 						display: "flex",
 						flexWrap: "wrap",
-						columnGap: size * MONO_ADVANCE,
+						columnGap: size * GLYPH_ADVANCE,
 						rowGap: Math.round(size * 0.14),
 						fontSize: size,
 						fontWeight: 700,
 						lineHeight: 1.08,
-						letterSpacing: "-0.02em",
+						letterSpacing: `${LETTER_SPACING_EM}em`,
 					}}
 				>
 					{words.map((word) => (
