@@ -32,6 +32,8 @@ Two CI gates the other frontends already have.
 ## Toolchain guard
 
 - `.github/dependabot.yml` ignores `typescript` versions `>=7`.
+- `.github/dependabot.yml` ignores `@types/node` majors, so its major stays on the Node major
+  `ci.yml` installs (24) instead of following npm latest.
 - `test/toolchain.test.ts` asserts the declared `typescript` range's major is below 7, and that
   `@types/node`'s major does not run ahead of the Node major `ci.yml` installs.
 
@@ -41,7 +43,7 @@ Pass:
 - [x] `smokeBaseUrl(undefined | "" | "  ")` is `null` (tier off).
 - [x] `smokeBaseUrl("https://x.test/")` is `"https://x.test"`; `http://localhost:8000` is kept.
 - [x] With `SMOKE_BASE_URL` unset the live test is skipped and no request is made.
-- [x] `typescript` is `^5`, `@types/node` is `^20` with CI on Node 24: the guard passes.
+- [x] `typescript` is `^6.0.3`, `@types/node` is `^24` with CI on Node 24: the guard passes.
 
 Failure:
 - [x] `smokeBaseUrl` throws `SmokeTargetError` for no scheme, `ftp://`, `https://` with no host,

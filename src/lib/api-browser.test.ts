@@ -7,7 +7,7 @@ import { BACKEND_PROXY_PREFIX, browserApi, proxyUrl } from "./api-browser";
 
 // Browser-side calls go to the same-origin proxy route, never to the backend, and carry no
 // token: the proxy signs them (spec 07, T-PTP-7). jsdom gives the page an origin; any request
-// to the backend's own URL would fail the test (MSW `onUnhandledRequest: "error"`).
+// to the backend's own URL would fail the test (MSW `onUnhandledFrame: "error"`).
 
 describe("browserApi goes through /api/backend (T-PTP-7)", () => {
 	it("prefixes backend paths with the proxy route", () => {

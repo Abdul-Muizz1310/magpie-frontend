@@ -52,7 +52,7 @@ $ pnpm dev
 - 🛡️ Zod v4 validation on all API responses
 - ⚡ React Server Components for data fetching (fully dynamic per request via `connection()`)
 - 🔐 Admin-gated mutations — create/edit/delete source and scrape triggers require a shared-secret session (fail-closed); read-only browsing is open
-- 🧪 Vitest + Testing Library with MSW 2 API mocks
+- 🧪 Vitest + Testing Library with MSW 3 API mocks
 - 📱 Responsive terminal layout
 
 ---
@@ -162,12 +162,12 @@ Component and `lib` unit tests are co-located as `*.test.tsx` / `*.test.ts` next
 | Concern | Choice |
 |---|---|
 | **Framework** | Next.js 16 (App Router, React Server Components) |
-| **Language** | TypeScript 5.9 (strict) |
+| **Language** | TypeScript 6.0 (strict) |
 | **Styling** | Tailwind CSS v4 (terminal aesthetic, emerald accent) |
 | **Validation** | Zod v4 (all API boundaries) |
 | **Lint / Format** | Biome |
 | **Testing** | Vitest + Testing Library |
-| **API mocks** | MSW 2 |
+| **API mocks** | MSW 3 |
 | **Hosting** | Vercel |
 
 ---
@@ -222,8 +222,8 @@ pnpm test -- --coverage      # coverage report
 | **Tests** | 426 tests (unit + route-level); 425 run everywhere, the live `/health` smoke test runs only when `SMOKE_BASE_URL` is set |
 | **Line coverage** | **94%** |
 | **Coverage scope** | Includes `app/**/page.tsx` composition logic and the error/not-found boundaries — route-level tests invoke each page against a mocked data layer (async RSCs can't be rendered in jsdom) and assert `notFound()`, `generateMetadata`, and pagination-offset behavior |
-| **Framework** | Vitest + Testing Library + MSW 2 |
-| **API mocking** | MSW 2 request handlers — no real backend in tests (the opt-in smoke test is the one exception) |
+| **Framework** | Vitest + Testing Library + MSW 3 |
+| **API mocking** | MSW 3 request handlers — no real backend in tests (the opt-in smoke test is the one exception) |
 | **CI** | lint + typecheck → test with coverage → `next build` (plus a check that no client bundle carries signing code) → push-only `smoke` job that probes the backend's `/health` via the `SMOKE_BASE_URL` repository variable, inert when unset |
 | **Validation** | Zod schemas validated in test assertions |
 | **Methodology** | Spec-TDD — test cases enumerated before implementation |
@@ -238,7 +238,7 @@ pnpm test -- --coverage      # coverage report
 | 🛡️ **Negative-space programming** | Zod rejects malformed API responses at the boundary. TypeScript strict mode. No `any`. |
 | 🧬 **Parse, don't validate** | Zod v4 on every API response. Invalid data fails loudly, never silently propagates. |
 | 🏗️ **Separation of concerns** | `app/` thin RSC pages. `components/` presentation only. `lib/` owns I/O + validation. |
-| 🔤 **Typed everything** | TypeScript 5.9 strict. Zod-inferred types flow from API to components. No untyped data crossing boundaries. |
+| 🔤 **Typed everything** | TypeScript 6.0 strict. Zod-inferred types flow from API to components. No untyped data crossing boundaries. |
 | 🌊 **Pure core, imperative shell** | Utility functions pure. API calls + side effects isolated in `lib/`. |
 
 ---

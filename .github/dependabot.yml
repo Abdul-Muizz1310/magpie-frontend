@@ -15,6 +15,11 @@ updates:
       # holds the same line.
       - dependency-name: "typescript"
         versions: [">=7"]
+      # @types/node must track the Node major ci.yml installs (24), not npm latest:
+      # types ahead of the runtime describe APIs that are not there, and nothing
+      # reports it. test/toolchain.test.ts holds the same line.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     # react and react-dom are both pinned to one exact version and must be
     # raised together. Ungrouped, dependabot opens a PR per package and lifts
     # only one, and react-dom reaches into react internals that are guaranteed
