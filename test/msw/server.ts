@@ -11,4 +11,4 @@ import { setupServer } from "msw/node";
 // Lifecycle hooks (resetHandlers, close) live in `test/setup.ts` so the
 // ordering relative to `cleanup()` is deterministic.
 export const server = setupServer();
-server.listen({ onUnhandledRequest: "error" });
+server.listen({ onUnhandledFrame: "error" });
